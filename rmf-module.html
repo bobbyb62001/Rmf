@@ -147,6 +147,29 @@
   .role-col-label{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber-dim);margin-bottom:6px;}
   .role-col ul{margin:0;padding-left:18px;font-size:0.85rem;line-height:1.55;}
   .role-rmf-tag{display:inline-block;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;background:rgba(74,108,140,0.12);color:var(--slateblue);padding:3px 9px;border-radius:5px;}
+
+  /* ---- OVERVIEW ---- */
+  .overview-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+  @media (max-width:600px){.overview-stats{grid-template-columns:1fr;}}
+  .stat-box{background:var(--paper-dim);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:background .15s ease;}
+  .stat-box:hover{background:#e0dccb;}
+  .stat-box .stat-num{font-family:'Source Serif 4',serif;font-size:2rem;font-weight:700;color:var(--amber-dim);}
+  .stat-box .stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-top:4px;}
+
+  /* ---- GLOSSARY ---- */
+  .glossary-row{background:var(--paper);color:var(--ink);border-radius:8px;padding:12px 18px;margin-bottom:8px;}
+  .glossary-term{display:flex;align-items:baseline;gap:8px;}
+  .glossary-term b{font-family:'IBM Plex Mono',monospace;font-size:0.86rem;color:var(--amber-dim);}
+  .glossary-term span{font-weight:600;font-size:0.88rem;}
+  .glossary-row p{margin:4px 0 0;font-size:0.84rem;color:var(--ink-soft);line-height:1.4;}
+
+  /* ---- DOCS ---- */
+  .doc-card{background:var(--paper);color:var(--ink);border-radius:10px;padding:20px 22px;margin-bottom:14px;}
+  .doc-head{display:flex;align-items:baseline;gap:9px;margin-bottom:4px;}
+  .doc-code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:0.8rem;background:var(--navy-panel);color:var(--amber);padding:3px 9px;border-radius:5px;}
+  .doc-title{font-family:'Source Serif 4',serif;font-size:1.1rem;font-weight:700;}
+  .doc-owner{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);text-transform:uppercase;margin-bottom:10px;}
+  .doc-card ul{margin:0;padding-left:18px;font-size:0.87rem;line-height:1.5;}
   .func-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--paper-dim);align-items:flex-start;}
   .func-row:first-of-type{border-top:none;}
   .func-badge{flex-shrink:0;width:88px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:var(--navy-panel);color:var(--amber);padding:5px 4px;border-radius:5px;}
@@ -162,16 +185,32 @@
       <h1>Risk Management Framework</h1>
     </div>
     <div class="tabbar">
-      <button id="tab-tracker" class="active">Tracker</button>
+      <button id="tab-overview" class="active">Overview</button>
+      <button id="tab-tracker">Tracker</button>
       <button id="tab-study">Study</button>
       <button id="tab-certs">Certs &amp; Training</button>
       <button id="tab-nist">NIST Library</button>
       <button id="tab-roles">Roles</button>
+      <button id="tab-glossary">Glossary</button>
+      <button id="tab-docs">Documents</button>
+      <button id="tab-snow">ServiceNow</button>
     </div>
   </header>
 
+  <!-- OVERVIEW PANEL -->
+  <div id="panel-overview" class="panel active">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Where things stand</span>
+        <h2>Overview</h2>
+        <p class="desc">A single view across the tracker, quiz, and cert prep — jump to any tab for detail.</p>
+        <div id="overviewStats" class="overview-stats"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- TRACKER PANEL -->
-  <div id="panel-tracker" class="panel active">
+  <div id="panel-tracker" class="panel">
     <div class="tracker-layout">
       <div>
         <div class="wheel-box" id="wheel"></div>
@@ -221,9 +260,11 @@
       <div class="detail-card" style="margin-top:20px;">
         <span class="step-eyebrow">Training sources</span>
         <h2>Where to actually study</h2>
-        <p class="desc">Free/official agency training first — it's authoritative and DoD-endorsed. The self-paced picks below are ones with real review volume and credible instructors; the AI RMF listings are newer with less of a track record, so skim before spending time.</p>
+        <p class="desc">Free/official agency training first — it's authoritative and DoD-endorsed. The university courses below are free on the audit track (no certificate, no cost) — real college-taught content, just without the paper. Self-paced picks are ones with real review volume and credible instructors; the AI RMF listings are newer with less of a track record, so skim before spending time.</p>
         <div class="src-group-label">Official &amp; free (agency)</div>
         <div id="agencySources"></div>
+        <div class="src-group-label" style="margin-top:14px;">Free — university courses (audit track)</div>
+        <div id="collegeSources"></div>
         <div class="src-group-label" style="margin-top:14px;">Self-paced (varies in quality — vet before relying on it)</div>
         <div id="selfPacedSources"></div>
       </div>
@@ -286,6 +327,47 @@
       </div>
 
       <div id="rolesList"></div>
+    </div>
+  </div>
+
+  <!-- GLOSSARY PANEL -->
+  <div id="panel-glossary" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Quick reference</span>
+        <h2>Glossary</h2>
+        <p class="desc">Acronyms and terms used throughout this module and in day-to-day RMF/ISSO work.</p>
+      </div>
+      <div id="glossaryList"></div>
+    </div>
+  </div>
+
+  <!-- DOCUMENTS PANEL -->
+  <div id="panel-docs" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">What's actually in them</span>
+        <h2>Core RMF documents</h2>
+        <p class="desc">The artifacts that move through the RMF process — what each one contains and who owns it.</p>
+      </div>
+      <div id="docsList"></div>
+    </div>
+  </div>
+
+  <!-- SERVICENOW PANEL -->
+  <div id="panel-snow" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Customer's platform</span>
+        <h2>ServiceNow, mapped to RMF/ISSO work</h2>
+        <p class="desc">ServiceNow is a large platform — this covers the parts most relevant to compliance and security work rather than the whole product.</p>
+      </div>
+      <div id="snowModulesList"></div>
+      <div class="detail-card" style="margin-top:20px;">
+        <span class="step-eyebrow">How it maps</span>
+        <h2>RMF concepts → ServiceNow</h2>
+        <table class="domain-table" id="snowMapTable"></table>
+      </div>
     </div>
   </div>
 </div>
@@ -457,6 +539,11 @@ const AGENCY_SOURCES = [
   {label:"CDSE / STEPP — CS101–CS107: RMF step-by-step", url:"https://www.cdse.edu/Training/eLearning/CS101/", note:"One free course per RMF step (Categorize through Monitor)"},
   {label:"CDSE / STEPP — CS200: Continuous Monitoring", url:"https://www.cdse.edu/Training/eLearning/CS200/", note:"Free, focused on the Monitor step in depth"},
   {label:"CDSE — CS100.CU curriculum bundle", url:"https://www.cdse.edu/Training/Curricula/CS100/", note:"Bundles the full RMF course set into one curriculum"}
+];
+
+const COLLEGE_SOURCES = [
+  {label:"RIT — Cybersecurity Risk Management (edX, audit free)", url:"https://www.edx.org/course/cybersecurity-risk-management", note:"Rochester Institute of Technology, part of the RITx Cybersecurity MicroMasters; audit track is free, no certificate"},
+  {label:"Kennesaw State University — Cybersecurity Risk Management Frameworks (Coursera, free to audit)", url:"https://www.coursera.org/specializations/cybersecurity-risk-management-frameworks", note:"Covers NIST & ISO risk frameworks; taught by Whitman & Mattord, well-known textbook authors in the field"}
 ];
 
 const SELF_PACED_SOURCES = [
@@ -673,6 +760,9 @@ function renderCertStatics(){
   document.getElementById('agencySources').innerHTML = AGENCY_SOURCES.map(l=>
     `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
   ).join('');
+  document.getElementById('collegeSources').innerHTML = COLLEGE_SOURCES.map(l=>
+    `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
+  ).join('');
   document.getElementById('selfPacedSources').innerHTML = SELF_PACED_SOURCES.map(l=>
     `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
   ).join('');
@@ -850,14 +940,105 @@ function renderRoles(){
   `).join('');
 }
 
+const GLOSSARY = [
+  {term:"ATO", full:"Authorization to Operate", def:"The AO's formal decision that a system may operate given its documented risk."},
+  {term:"ATO w/ conditions", full:"Conditional ATO", def:"Operation is permitted while specific POA&M items are resolved by a set date."},
+  {term:"DATO", full:"Denial of Authorization to Operate", def:"The AO determines risk is unacceptable — the system may not operate."},
+  {term:"cATO", full:"Continuous ATO", def:"An authorization sustained through continuous monitoring rather than periodic reassessment — the end goal of a mature Monitor step."},
+  {term:"SSP", full:"System Security Plan", def:"The authoritative document describing how each selected control is implemented for a system."},
+  {term:"SAP", full:"Security Assessment Plan", def:"Defines scope, methods, and procedures before a control assessment begins."},
+  {term:"SAR", full:"Security Assessment Report", def:"The assessor's findings on whether controls are implemented correctly and working as intended."},
+  {term:"POA&M", full:"Plan of Action & Milestones", def:"Tracks known weaknesses and the timeline/plan to remediate them."},
+  {term:"eMASS", full:"Enterprise Mission Assurance Support Service", def:"DoD's system of record for managing RMF packages, controls, and POA&Ms."},
+  {term:"CUI", full:"Controlled Unclassified Information", def:"Unclassified information that still requires safeguarding per law, regulation, or policy — a common CMMC/800-171 trigger."},
+  {term:"FISMA", full:"Federal Information Security Modernization Act", def:"The law requiring federal agencies (and by extension their systems) to implement information security programs — RMF is how that gets executed."},
+  {term:"DCWF", full:"DoD Cyber Workforce Framework", def:"The 74 work-role taxonomy underlying DoDM 8140.03, replacing the old IAT/IAM/IASAE categories."},
+  {term:"SCF", full:"Secure Controls Framework", def:"A meta-framework/crosswalk mapping controls across NIST, ISO, CMMC, and other standards — what your grc-toolkit's SCF Explorer tab uses."},
+  {term:"OSCAL", full:"Open Security Controls Assessment Language", def:"NIST's machine-readable format for SSPs, assessment plans, and results — enables automation across GRC tools."},
+  {term:"AO", full:"Authorizing Official", def:"The senior official who accepts risk and grants/denies the ATO."},
+  {term:"CMMC", full:"Cybersecurity Maturity Model Certification", def:"Verifies a DoD contractor's cybersecurity practices, largely against NIST 800-171 — distinct from but related to RMF."}
+];
+
+const RMF_DOCS = [
+  {code:"SSP", name:"System Security Plan", owner:"Owned by ISSO, approved by ISSM/AO", produced:"Select → updated through Implement", items:["System description, boundary, and categorization","Every selected control and how it's specifically implemented","References to supporting evidence/artifacts","Living document — updated whenever the system changes"]},
+  {code:"SAP", name:"Security Assessment Plan", owner:"Owned by the SCA", produced:"Start of Assess", items:["Scope of the assessment (which controls, which systems)","Assessment methods: examine, interview, test","Rules of engagement and assessor roles","Timeline for the assessment"]},
+  {code:"SAR", name:"Security Assessment Report", owner:"Owned by the SCA", produced:"End of Assess", items:["Findings for each assessed control — satisfied / not satisfied","Risk rating for each identified weakness","Evidence referenced for each finding","Recommendations that feed the POA&M"]},
+  {code:"POA&M", name:"Plan of Action & Milestones", owner:"Owned by ISSO, tracked in eMASS", produced:"Assess → maintained through Monitor", items:["Each open weakness/deficiency","Planned remediation action and resources needed","Milestones and target completion dates","Status updates as items close or slip"]},
+  {code:"Auth Package", name:"Authorization Package", owner:"Assembled by ISSO/ISSM for the AO", produced:"Authorize", items:["SSP, SAR, and POA&M bundled together","Risk assessment summary","AO's decision — ATO, ATO w/ conditions, or DATO","Authorization terms and reauthorization date"]}
+];
+
+const SNOW_MODULES = [
+  {name:"GRC (Governance, Risk, Compliance)", tag:"Most relevant to your work", note:"Policy & compliance management, risk register, control mapping, audit management. This is where POA&M-style tracking and control-to-framework mapping typically live in ServiceNow."},
+  {name:"SecOps — Vulnerability Response (VR)", tag:"Security-relevant", note:"Ingests scanner data (Tenable, Qualys, Rapid7), maps vulnerabilities to CMDB assets, and drives remediation tasks — feeds directly into POA&M-type tracking."},
+  {name:"SecOps — Security Incident Response (SIR)", tag:"Security-relevant", note:"Manages the security incident lifecycle from detection through remediation, often fed by SIEM tools."},
+  {name:"ITSM (Incident, Problem, Change)", tag:"Foundational", note:"Core ticketing — incidents, root-cause/problem records, and change requests. Remediation work from GRC/VR typically flows into ITSM change tickets to actually get fixed."},
+  {name:"CMDB (Configuration Management Database)", tag:"Foundational", note:"The asset/system inventory everything else references — controls, vulnerabilities, and incidents all tie back to CMDB records."}
+];
+
+const SNOW_MAP = [
+  {rmf:"POA&M item", snow:"GRC issue/risk record, or a VR remediation task"},
+  {rmf:"SSP control implementation", snow:"GRC control record mapped to a policy/framework"},
+  {rmf:"Assessment finding (SAR)", snow:"GRC audit finding or a VR vulnerability record"},
+  {rmf:"System/authorization boundary", snow:"CMDB configuration item (CI) and its relationships"},
+  {rmf:"Continuous monitoring", snow:"VR scan cadence + GRC continuous control monitoring"},
+  {rmf:"Remediation execution", snow:"ITSM change/incident ticket linked back to the GRC or VR record"}
+];
+
+function renderOverview(){
+  const trackerPct = totalTasks() ? Math.round(completedTasks()/totalTasks()*100) : 0;
+  const certDone = certChecks.filter(Boolean).length;
+  const box = document.getElementById('overviewStats');
+  box.innerHTML = `
+    <div class="stat-box" data-jump="tracker"><div class="stat-num">${trackerPct}%</div><div class="stat-lbl">RMF Tracker</div></div>
+    <div class="stat-box" data-jump="study"><div class="stat-num">${bestScore}/${QUIZ.length}</div><div class="stat-lbl">Best Quiz Score</div></div>
+    <div class="stat-box" data-jump="certs"><div class="stat-num">${certDone}/${CERT_TASKS.length}</div><div class="stat-lbl">CGRC Prep Steps</div></div>
+  `;
+  box.querySelectorAll('.stat-box').forEach(el=>{
+    el.onclick = ()=>document.getElementById('tab-'+el.getAttribute('data-jump')).click();
+  });
+}
+
+function renderGlossary(){
+  document.getElementById('glossaryList').innerHTML = GLOSSARY.map(g=>`
+    <div class="glossary-row">
+      <div class="glossary-term"><b>${g.term}</b><span>${g.full}</span></div>
+      <p>${g.def}</p>
+    </div>
+  `).join('');
+}
+
+function renderDocs(){
+  document.getElementById('docsList').innerHTML = RMF_DOCS.map(d=>`
+    <div class="doc-card">
+      <div class="doc-head"><span class="doc-code">${d.code}</span><span class="doc-title">${d.name}</span></div>
+      <div class="doc-owner">${d.owner} · ${d.produced}</div>
+      <ul>${d.items.map(i=>`<li>${i}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+}
+
+function renderServiceNow(){
+  document.getElementById('snowModulesList').innerHTML = SNOW_MODULES.map(m=>`
+    <div class="cert-row">
+      <div class="cert-row-head"><b>${m.name}</b><span class="tier-badge tier-standard">${m.tag}</span></div>
+      <p>${m.note}</p>
+    </div>
+  `).join('');
+  document.getElementById('snowMapTable').innerHTML = `
+    <tr><th>RMF concept</th><th>Typical ServiceNow equivalent</th></tr>
+    ${SNOW_MAP.map(m=>`<tr><td>${m.rmf}</td><td>${m.snow}</td></tr>`).join('')}
+  `;
+}
+
 /* ---------- TABS ---------- */
-const TAB_IDS = ['tracker','study','certs','nist','roles'];
+const TAB_IDS = ['overview','tracker','study','certs','nist','roles','glossary','docs','snow'];
 TAB_IDS.forEach(id=>{
   document.getElementById('tab-'+id).onclick = ()=>{
     TAB_IDS.forEach(other=>{
       document.getElementById('tab-'+other).classList.toggle('active', other===id);
       document.getElementById('panel-'+other).classList.toggle('active', other===id);
     });
+    if(id === 'overview') renderOverview();
   };
 });
 
@@ -875,6 +1056,10 @@ TAB_IDS.forEach(id=>{
   renderCertChecklist();
   renderNistLibrary();
   renderRoles();
+  renderGlossary();
+  renderDocs();
+  renderServiceNow();
+  renderOverview();
 })();
 </script>
 </body>
