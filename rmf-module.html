@@ -108,6 +108,21 @@
   .filters button.active{background:var(--amber);border-color:var(--amber);color:var(--navy);}
   .done-screen{text-align:center;padding:30px 10px;}
   .done-screen .big{font-family:'Source Serif 4',serif;font-size:2.6rem;color:var(--amber);}
+
+  /* ---- CERTS ---- */
+  .cert-layout{max-width:640px;}
+  .exam-facts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;}
+  .exam-facts span{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper-dim);color:var(--ink);padding:5px 10px;border-radius:5px;}
+  .domain-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+  .domain-table th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--paper-dim);padding:6px 8px 6px 0;}
+  .domain-table td{padding:8px 8px 8px 0;border-bottom:1px solid var(--paper-dim);vertical-align:top;}
+  .domain-table td.wt{font-family:'IBM Plex Mono',monospace;color:var(--amber-dim);white-space:nowrap;}
+  .domain-table td.rmf{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);white-space:nowrap;}
+  .link-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--paper-dim);font-size:0.9rem;}
+  .link-row:first-of-type{border-top:none;}
+  .link-row a{color:var(--slateblue);text-decoration:none;font-weight:600;}
+  .link-row a:hover{text-decoration:underline;}
+  .link-row .note{color:var(--ink-soft);font-size:0.8rem;}
 </style>
 </head>
 <body>
@@ -120,6 +135,7 @@
     <div class="tabbar">
       <button id="tab-tracker" class="active">Tracker</button>
       <button id="tab-study">Study</button>
+      <button id="tab-certs">Certs &amp; Training</button>
     </div>
   </header>
 
@@ -140,6 +156,36 @@
       <div class="score-pill">Score: <b id="scoreNum">0</b>/<span id="scoreTotal">0</span></div>
     </div>
     <div id="studyArea"></div>
+  </div>
+
+  <!-- CERTS & TRAINING PANEL -->
+  <div id="panel-certs" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">ISC2 · Formerly CAP</span>
+        <h2>CGRC — Certified in Governance, Risk and Compliance</h2>
+        <p class="desc">CAP was renamed CGRC on Feb 15, 2023 — same exam lineage, same seven domains, new name. The domains map almost one-to-one onto the RMF steps in the Tracker tab, so working through that checklist doubles as exam prep.</p>
+        <div class="exam-facts" id="examFacts"></div>
+        <table class="domain-table" id="domainTable"></table>
+      </div>
+
+      <div class="detail-card">
+        <span class="step-eyebrow">Prep checklist</span>
+        <h2>Getting exam-ready</h2>
+        <p class="desc">A working path from zero to sitting the CGRC exam, including DoD-specific training.</p>
+        <div id="certTaskList"></div>
+        <div class="progress-row">
+          <span id="certProgressLabel">0/0</span>
+          <div class="progress-track"><div class="progress-fill" id="certProgressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="detail-card" style="margin-top:20px;">
+        <span class="step-eyebrow">Reference links</span>
+        <h2>Where to go</h2>
+        <div id="linkList"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -249,6 +295,41 @@ const QUIZ = [
   {cat:"Steps", q:"Which step involves independently verifying that implemented controls actually work as intended?", choices:["Select","Implement","Assess","Authorize"], answer:2, explain:"Assess is where an SCA tests the implemented controls against 800-53A procedures and documents results in the SAR."},
   {cat:"Categorize", q:"What's the purpose of NIST SP 800-60 in the Categorize step?", choices:["It defines control baselines","It helps identify information types and their provisional impact levels","It's the assessment methodology","It's the continuous monitoring guide"], answer:1, explain:"800-60 maps information types to provisional confidentiality/integrity/availability impact levels, feeding FIPS 199 categorization."},
   {cat:"Docs", q:"What does SAP stand for and when is it produced?", choices:["Security Authorization Package, in Authorize","Security Assessment Plan, in Assess","System Access Policy, in Prepare","Security Action Plan, in Monitor"], answer:1, explain:"The Security Assessment Plan (SAP) lays out scope, methods, and procedures before assessment begins."}
+];
+
+const CGRC_DOMAINS = [
+  {n:1, name:"Security &amp; Privacy Governance, Risk Management, and Compliance Program", weight:"16%", rmf:"Prepare"},
+  {n:2, name:"Scope of the System", weight:"10%", rmf:"Categorize"},
+  {n:3, name:"Selection and Approval of Framework, Security, and Privacy Controls", weight:"14%", rmf:"Select"},
+  {n:4, name:"Implementation of Security and Privacy Controls", weight:"17%", rmf:"Implement"},
+  {n:5, name:"Assessment/Audit of Security and Privacy Controls", weight:"16%", rmf:"Assess"},
+  {n:6, name:"System Compliance", weight:"14%", rmf:"Authorize"},
+  {n:7, name:"Compliance Maintenance", weight:"13%", rmf:"Monitor"}
+];
+
+const EXAM_FACTS = [
+  "125 questions (100 scored + 25 unscored pretest)",
+  "3 hours, Pearson VUE testing centers",
+  "Pass score: 700/1000 (scaled)",
+  "2 yrs paid experience in ≥1 domain — or Associate of ISC2 path (3 yrs to backfill)",
+  "Outline current as of June 15, 2024"
+];
+
+const CERT_TASKS = [
+  "Confirm 2 years qualifying experience across the 7 CGRC domains (or plan the Associate of ISC2 path)",
+  "Read DoDI 8510.01 (RMF for DoD IT) on DoD Cyber Exchange",
+  "Review the official ISC2 CGRC Exam Outline domain-by-domain",
+  "Complete RMF for DoD IT training (BAI via NICCS — 4 days, + optional eMASS day)",
+  "Work through ISC2's official CGRC practice tests / flashcards",
+  "Schedule the Pearson VUE exam date",
+  "Submit the endorsement form after passing"
+];
+
+const REF_LINKS = [
+  {label:"DoD Cyber Exchange", url:"https://public.cyber.mil", note:"DoDI 8510.01, policy docs, awareness training"},
+  {label:"ISC2 — CGRC Certification", url:"https://www.isc2.org/Certifications/CGRC", note:"Exam outline, self-study resources"},
+  {label:"NICCS Training Catalog", url:"https://niccs.cisa.gov/training/catalog", note:"Search 'RMF for DoD IT' — BAI course listing"},
+  {label:"NIST SP 800-37 Rev 2", url:"https://csrc.nist.gov/pubs/sp/800/37/r2/upd1/final", note:"The RMF source document"}
 ];
 
 /* ---------- STORAGE HELPERS ---------- */
@@ -436,28 +517,69 @@ function renderQuestion(){
   };
 }
 
+/* ---------- CERTS & TRAINING ---------- */
+const STORE_KEY_CERTS = 'rmf-cert-checks';
+let certChecks = [];
+
+function renderCertStatics(){
+  document.getElementById('examFacts').innerHTML =
+    EXAM_FACTS.map(f=>`<span>${f}</span>`).join('');
+
+  const table = document.getElementById('domainTable');
+  table.innerHTML = `
+    <tr><th>Domain</th><th>Weight</th><th>RMF Step</th></tr>
+    ${CGRC_DOMAINS.map(d=>`<tr><td>${d.n}. ${d.name}</td><td class="wt">${d.weight}</td><td class="rmf">${d.rmf}</td></tr>`).join('')}
+  `;
+
+  document.getElementById('linkList').innerHTML = REF_LINKS.map(l=>
+    `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
+  ).join('');
+}
+
+function renderCertChecklist(){
+  if(certChecks.length !== CERT_TASKS.length){
+    certChecks = CERT_TASKS.map((_,i)=> certChecks[i] || false);
+  }
+  const list = document.getElementById('certTaskList');
+  list.innerHTML = '';
+  CERT_TASKS.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'task' + (certChecks[i] ? ' checked' : '');
+    row.innerHTML = `<input type="checkbox" id="cert${i}" ${certChecks[i]?'checked':''}><label for="cert${i}">${t}</label>`;
+    row.querySelector('input').onchange = (e)=>{
+      certChecks[i] = e.target.checked;
+      saveJSON(STORE_KEY_CERTS, certChecks);
+      renderCertChecklist();
+    };
+    list.appendChild(row);
+  });
+  const done = certChecks.filter(Boolean).length;
+  document.getElementById('certProgressLabel').textContent = `${done}/${CERT_TASKS.length}`;
+  document.getElementById('certProgressFill').style.width = (done/CERT_TASKS.length*100)+'%';
+}
+
 /* ---------- TABS ---------- */
-document.getElementById('tab-tracker').onclick = ()=>{
-  document.getElementById('tab-tracker').classList.add('active');
-  document.getElementById('tab-study').classList.remove('active');
-  document.getElementById('panel-tracker').classList.add('active');
-  document.getElementById('panel-study').classList.remove('active');
-};
-document.getElementById('tab-study').onclick = ()=>{
-  document.getElementById('tab-study').classList.add('active');
-  document.getElementById('tab-tracker').classList.remove('active');
-  document.getElementById('panel-study').classList.add('active');
-  document.getElementById('panel-tracker').classList.remove('active');
-};
+const TAB_IDS = ['tracker','study','certs'];
+TAB_IDS.forEach(id=>{
+  document.getElementById('tab-'+id).onclick = ()=>{
+    TAB_IDS.forEach(other=>{
+      document.getElementById('tab-'+other).classList.toggle('active', other===id);
+      document.getElementById('panel-'+other).classList.toggle('active', other===id);
+    });
+  };
+});
 
 /* ---------- INIT ---------- */
 (async function init(){
   checks = await loadJSON(STORE_KEY_TRACKER, {});
   const quizSave = await loadJSON(STORE_KEY_QUIZ, {best:0});
   bestScore = quizSave.best || 0;
+  certChecks = await loadJSON(STORE_KEY_CERTS, []);
   renderAll();
   buildFilters();
   startQuizSet();
+  renderCertStatics();
+  renderCertChecklist();
 })();
 </script>
 </body>
