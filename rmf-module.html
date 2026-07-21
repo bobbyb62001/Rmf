@@ -118,6 +118,8 @@
   .domain-table td{padding:8px 8px 8px 0;border-bottom:1px solid var(--paper-dim);vertical-align:top;}
   .domain-table td.wt{font-family:'IBM Plex Mono',monospace;color:var(--amber-dim);white-space:nowrap;}
   .domain-table td.rmf{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);white-space:nowrap;}
+  .domain-table tr.jump-row{cursor:pointer;}
+  .domain-table tr.jump-row:hover td{background:rgba(74,108,140,0.08);}
   .link-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--paper-dim);font-size:0.9rem;}
   .link-row:first-of-type{border-top:none;}
   .link-row a{color:var(--slateblue);text-decoration:none;font-weight:600;}
@@ -661,8 +663,18 @@ const OTHER_PUBS = [
 function renderNistLibrary(){
   document.getElementById('sp53Table').innerHTML = `
     <tr><th>Code</th><th>Control Family</th></tr>
-    ${SP53_FAMILIES.map(f=>`<tr><td class="wt">${f.code}</td><td>${f.name}</td></tr>`).join('')}
+    ${SP53_FAMILIES.map(f=>`<tr class="jump-row" data-code="${f.code}"><td class="wt">${f.code}</td><td>${f.name}</td></tr>`).join('')}
   `;
+  document.querySelectorAll('#sp53Table .jump-row').forEach(row=>{
+    row.onclick = ()=>{
+      const code = row.getAttribute('data-code');
+      if(typeof window.grcJumpToControlFamily === 'function'){
+        window.grcJumpToControlFamily(code);
+      } else {
+        console.log('grcJumpToControlFamily hook not defined yet — see integration guide.');
+      }
+    };
+  });
   document.getElementById('aiRmfFunctions').innerHTML = AI_RMF_FUNCTIONS.map(f=>
     `<div class="func-row"><span class="func-badge">${f.name}</span><span class="func-text">${f.desc}</span></div>`
   ).join('');
