@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RMF Tracker &amp; Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#10233A;
+    --navy-panel:#16304E;
+    --paper:#F6F3EA;
+    --paper-dim:#EAE6D8;
+    --amber:#C89B3C;
+    --amber-dim:#8f7027;
+    --olive:#5B7553;
+    --rust:#A64B3C;
+    --slateblue:#4A6C8C;
+    --ink:#1B2430;
+    --ink-soft:#5A6472;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--navy);
+    color:var(--paper);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 60px;}
+  header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;border-bottom:1px solid rgba(246,243,234,0.15);padding-bottom:18px;margin-bottom:22px;}
+  header h1{font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:1.7rem;margin:0;letter-spacing:0.2px;}
+  header .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;display:block;}
+  .tabbar{display:flex;gap:6px;background:var(--navy-panel);padding:5px;border-radius:8px;}
+  .tabbar button{
+    background:transparent;border:none;color:rgba(246,243,234,0.65);
+    font-family:'IBM Plex Sans';font-size:0.88rem;font-weight:500;
+    padding:9px 16px;border-radius:6px;cursor:pointer;transition:all .15s ease;
+  }
+  .tabbar button.active{background:var(--amber);color:var(--navy);font-weight:600;}
+  .tabbar button:not(.active):hover{color:var(--paper);}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* ---- TRACKER ---- */
+  .tracker-layout{display:grid;grid-template-columns:340px 1fr;gap:26px;}
+  @media (max-width:760px){.tracker-layout{grid-template-columns:1fr;}}
+  .wheel-box{position:relative;width:320px;height:320px;margin:10px auto;}
+  .wheel-center{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:132px;height:132px;border-radius:50%;
+    background:var(--navy-panel);border:1px solid rgba(200,155,60,0.4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:8px;
+  }
+  .wheel-center .pct{font-family:'Source Serif 4',serif;font-size:2rem;font-weight:700;color:var(--amber);line-height:1;}
+  .wheel-center .lbl{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:rgba(246,243,234,0.6);margin-top:4px;}
+  .node{
+    position:absolute;width:64px;height:64px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:var(--navy-panel);border:2px solid rgba(246,243,234,0.25);
+    cursor:pointer;transition:all .15s ease;font-family:'IBM Plex Mono',monospace;
+  }
+  .node .num{font-size:0.95rem;font-weight:600;}
+  .node.done{background:var(--olive);border-color:var(--olive);}
+  .node.selected{border-color:var(--amber);box-shadow:0 0 0 3px rgba(200,155,60,0.25);}
+  .node:hover{border-color:var(--amber);}
+  .arc-svg{position:absolute;top:0;left:0;width:100%;height:100%;}
+
+  .detail-card{background:var(--paper);color:var(--ink);border-radius:10px;padding:22px 24px;}
+  .detail-card .step-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber-dim);}
+  .detail-card h2{font-family:'Source Serif 4',serif;margin:4px 0 6px;font-size:1.4rem;}
+  .detail-card p.desc{color:var(--ink-soft);font-size:0.92rem;margin:0 0 16px;line-height:1.45;}
+  .task{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--paper-dim);}
+  .task:first-of-type{border-top:none;}
+  .task input{margin-top:3px;width:16px;height:16px;accent-color:var(--olive);cursor:pointer;flex-shrink:0;}
+  .task label{font-size:0.93rem;line-height:1.4;cursor:pointer;}
+  .task.checked label{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--olive);}
+  .progress-row{display:flex;align-items:center;gap:10px;margin-top:18px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);}
+  .progress-track{flex:1;height:6px;background:var(--paper-dim);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--olive);border-radius:3px;transition:width .2s ease;}
+  .reset-link{display:inline-block;margin-top:16px;font-size:0.78rem;color:var(--rust);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+
+  /* ---- STUDY ---- */
+  .study-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+  .score-pill{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;background:var(--navy-panel);border:1px solid var(--amber-dim);padding:6px 14px;border-radius:20px;}
+  .score-pill b{color:var(--amber);}
+  .card{background:var(--paper);color:var(--ink);border-radius:10px;padding:26px 26px 22px;}
+  .card .cat{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber-dim);margin-bottom:10px;}
+  .card .q{font-family:'Source Serif 4',serif;font-size:1.22rem;line-height:1.4;margin:0 0 20px;}
+  .choices{display:flex;flex-direction:column;gap:9px;}
+  .choice{
+    text-align:left;background:#fff;border:1px solid var(--paper-dim);border-radius:7px;
+    padding:11px 14px;font-family:'IBM Plex Sans';font-size:0.92rem;cursor:pointer;color:var(--ink);
+    transition:all .12s ease;
+  }
+  .choice:hover:not(.locked){border-color:var(--slateblue);}
+  .choice.correct{background:rgba(91,117,83,0.15);border-color:var(--olive);font-weight:600;}
+  .choice.wrong{background:rgba(166,75,60,0.13);border-color:var(--rust);}
+  .explain{margin-top:16px;padding-top:14px;border-top:1px solid var(--paper-dim);font-size:0.87rem;color:var(--ink-soft);line-height:1.5;display:none;}
+  .explain.show{display:block;}
+  .study-nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+  .next-btn{background:var(--amber);color:var(--navy);border:none;padding:10px 20px;border-radius:7px;font-weight:600;font-size:0.88rem;cursor:pointer;}
+  .next-btn:disabled{opacity:0.35;cursor:not-allowed;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .filters button{background:transparent;border:1px solid rgba(246,243,234,0.3);color:rgba(246,243,234,0.75);font-size:0.75rem;padding:5px 11px;border-radius:14px;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
+  .filters button.active{background:var(--amber);border-color:var(--amber);color:var(--navy);}
+  .done-screen{text-align:center;padding:30px 10px;}
+  .done-screen .big{font-family:'Source Serif 4',serif;font-size:2.6rem;color:var(--amber);}
+
+  /* ---- CERTS ---- */
+  .cert-layout{max-width:640px;}
+  .exam-facts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;}
+  .exam-facts span{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper-dim);color:var(--ink);padding:5px 10px;border-radius:5px;}
+  .domain-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+  .domain-table th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--paper-dim);padding:6px 8px 6px 0;}
+  .domain-table td{padding:8px 8px 8px 0;border-bottom:1px solid var(--paper-dim);vertical-align:top;}
+  .domain-table td.wt{font-family:'IBM Plex Mono',monospace;color:var(--amber-dim);white-space:nowrap;}
+  .domain-table td.rmf{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);white-space:nowrap;}
+  .domain-table tr.jump-row{cursor:pointer;}
+  .domain-table tr.jump-row:hover td{background:rgba(74,108,140,0.08);}
+  .link-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--paper-dim);font-size:0.9rem;}
+  .link-row:first-of-type{border-top:none;}
+  .link-row a{color:var(--slateblue);text-decoration:none;font-weight:600;}
+  .link-row a:hover{text-decoration:underline;}
+  .link-row .note{color:var(--ink-soft);font-size:0.8rem;}
+  .src-group-label{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber-dim);margin-top:4px;}
+  .cert-row{padding:11px 0;border-top:1px solid var(--paper-dim);}
+  .cert-row:first-of-type{border-top:none;}
+  .cert-row-head{display:flex;align-items:center;gap:9px;margin-bottom:3px;}
+  .cert-row-head b{font-size:0.92rem;}
+  .tier-badge{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;}
+  .tier-badge.tier-standard{background:rgba(91,117,83,0.18);color:var(--olive);}
+  .tier-badge.tier-niche{background:rgba(200,155,60,0.18);color:var(--amber-dim);}
+  .cert-row p{margin:0;font-size:0.84rem;color:var(--ink-soft);line-height:1.4;}
+
+  /* ---- ROLES ---- */
+  .role-card{background:var(--paper);color:var(--ink);border-radius:10px;padding:22px 24px;margin-bottom:16px;}
+  .role-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .role-code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:0.78rem;background:var(--navy-panel);color:var(--amber);padding:3px 9px;border-radius:5px;}
+  .role-title{font-family:'Source Serif 4',serif;font-size:1.2rem;font-weight:700;}
+  .role-category{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;}
+  .role-desc{font-size:0.9rem;color:var(--ink-soft);margin:6px 0 14px;line-height:1.45;}
+  .role-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:600px){.role-cols{grid-template-columns:1fr;}}
+  .role-col-label{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber-dim);margin-bottom:6px;}
+  .role-col ul{margin:0;padding-left:18px;font-size:0.85rem;line-height:1.55;}
+  .role-rmf-tag{display:inline-block;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;background:rgba(74,108,140,0.12);color:var(--slateblue);padding:3px 9px;border-radius:5px;}
+
+  /* ---- OVERVIEW ---- */
+  .overview-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+  @media (max-width:600px){.overview-stats{grid-template-columns:1fr;}}
+  .stat-box{background:var(--paper-dim);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:background .15s ease;}
+  .stat-box:hover{background:#e0dccb;}
+  .stat-box .stat-num{font-family:'Source Serif 4',serif;font-size:2rem;font-weight:700;color:var(--amber-dim);}
+  .stat-box .stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-top:4px;}
+
+  /* ---- GLOSSARY ---- */
+  .glossary-row{background:var(--paper);color:var(--ink);border-radius:8px;padding:12px 18px;margin-bottom:8px;}
+  .glossary-term{display:flex;align-items:baseline;gap:8px;}
+  .glossary-term b{font-family:'IBM Plex Mono',monospace;font-size:0.86rem;color:var(--amber-dim);}
+  .glossary-term span{font-weight:600;font-size:0.88rem;}
+  .glossary-row p{margin:4px 0 0;font-size:0.84rem;color:var(--ink-soft);line-height:1.4;}
+
+  /* ---- DOCS ---- */
+  .doc-card{background:var(--paper);color:var(--ink);border-radius:10px;padding:20px 22px;margin-bottom:14px;}
+  .doc-head{display:flex;align-items:baseline;gap:9px;margin-bottom:4px;}
+  .doc-code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:0.8rem;background:var(--navy-panel);color:var(--amber);padding:3px 9px;border-radius:5px;}
+  .doc-title{font-family:'Source Serif 4',serif;font-size:1.1rem;font-weight:700;}
+  .doc-owner{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);text-transform:uppercase;margin-bottom:10px;}
+  .doc-card ul{margin:0;padding-left:18px;font-size:0.87rem;line-height:1.5;}
+  .func-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--paper-dim);align-items:flex-start;}
+  .func-row:first-of-type{border-top:none;}
+  .func-badge{flex-shrink:0;width:88px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:var(--navy-panel);color:var(--amber);padding:5px 4px;border-radius:5px;}
+  .func-text{font-size:0.87rem;line-height:1.45;}
+  .func-text b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <span class="eyebrow">ISSO Reference · RMF Module</span>
+      <h1>Risk Management Framework</h1>
+    </div>
+    <div class="tabbar">
+      <button id="tab-overview" class="active">Overview</button>
+      <button id="tab-tracker">Tracker</button>
+      <button id="tab-study">Study</button>
+      <button id="tab-certs">Certs &amp; Training</button>
+      <button id="tab-nist">NIST Library</button>
+      <button id="tab-roles">Roles</button>
+      <button id="tab-glossary">Glossary</button>
+      <button id="tab-docs">Documents</button>
+      <button id="tab-snow">ServiceNow</button>
+    </div>
+  </header>
+
+  <!-- OVERVIEW PANEL -->
+  <div id="panel-overview" class="panel active">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Where things stand</span>
+        <h2>Overview</h2>
+        <p class="desc">A single view across the tracker, quiz, and cert prep — jump to any tab for detail.</p>
+        <div id="overviewStats" class="overview-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRACKER PANEL -->
+  <div id="panel-tracker" class="panel">
+    <div class="tracker-layout">
+      <div>
+        <div class="wheel-box" id="wheel"></div>
+      </div>
+      <div class="detail-card" id="detailCard"></div>
+    </div>
+  </div>
+
+  <!-- STUDY PANEL -->
+  <div id="panel-study" class="panel">
+    <div class="study-top">
+      <div class="filters" id="filters"></div>
+      <div class="score-pill">Score: <b id="scoreNum">0</b>/<span id="scoreTotal">0</span></div>
+    </div>
+    <div id="studyArea"></div>
+  </div>
+
+  <!-- CERTS & TRAINING PANEL -->
+  <div id="panel-certs" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">ISC2 · Formerly CAP</span>
+        <h2>CGRC — Certified in Governance, Risk and Compliance</h2>
+        <p class="desc">CAP was renamed CGRC on Feb 15, 2023 — same exam lineage, same seven domains, new name. The domains map almost one-to-one onto the RMF steps in the Tracker tab, so working through that checklist doubles as exam prep.</p>
+        <div class="exam-facts" id="examFacts"></div>
+        <table class="domain-table" id="domainTable"></table>
+      </div>
+
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Know before you chase one</span>
+        <h2>The cert landscape</h2>
+        <p class="desc">Not all "RMF certifications" carry the same weight. Worth knowing the difference before spending time or money.</p>
+        <div id="certLandscapeList"></div>
+      </div>
+
+      <div class="detail-card">
+        <span class="step-eyebrow">Prep checklist</span>
+        <h2>Getting exam-ready</h2>
+        <p class="desc">A working path from zero to sitting the CGRC exam, including DoD-specific training.</p>
+        <div id="certTaskList"></div>
+        <div class="progress-row">
+          <span id="certProgressLabel">0/0</span>
+          <div class="progress-track"><div class="progress-fill" id="certProgressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="detail-card" style="margin-top:20px;">
+        <span class="step-eyebrow">Training sources</span>
+        <h2>Where to actually study</h2>
+        <p class="desc">Free/official agency training first — it's authoritative and DoD-endorsed. The university courses below are free on the audit track (no certificate, no cost) — real college-taught content, just without the paper. Self-paced picks are ones with real review volume and credible instructors; the AI RMF listings are newer with less of a track record, so skim before spending time.</p>
+        <div class="src-group-label">Official &amp; free (agency)</div>
+        <div id="agencySources"></div>
+        <div class="src-group-label" style="margin-top:14px;">Free — university courses (audit track)</div>
+        <div id="collegeSources"></div>
+        <div class="src-group-label" style="margin-top:14px;">Self-paced (varies in quality — vet before relying on it)</div>
+        <div id="selfPacedSources"></div>
+      </div>
+
+      <div class="detail-card" style="margin-top:20px;">
+        <span class="step-eyebrow">Reference links</span>
+        <h2>Where to go</h2>
+        <div id="linkList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NIST LIBRARY PANEL -->
+  <div id="panel-nist" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Control catalog · Rev 5</span>
+        <h2>NIST SP 800-53 Rev 5</h2>
+        <p class="desc">The catalog of security &amp; privacy controls you tailor and select in the RMF's Select step. Published September 2020 — technology-neutral, and now applies beyond just federal IT. Two families (PT, SR) were new in Rev 5, bringing the total to 20.</p>
+        <div class="exam-facts">
+          <span>20 control families</span>
+          <span>Low baseline: 150 controls</span>
+          <span>Moderate: 304 controls</span>
+          <span>High: 392 controls</span>
+        </div>
+        <table class="domain-table" id="sp53Table"></table>
+        <p class="desc" style="margin-top:14px;font-size:0.82rem;">Companion doc: <b>800-53A</b> provides the assessment procedures used to test these controls in the Assess step. NIST also released Rev 5.2 (2025) adding software-resiliency controls in response to EO 14306.</p>
+      </div>
+
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">NIST AI 100-1</span>
+        <h2>AI Risk Management Framework</h2>
+        <p class="desc">Voluntary, non-certifiable guidance for managing risk across an AI system's lifecycle — released Jan 26, 2023. Still the current version; NIST extends it through profiles rather than new version numbers.</p>
+        <div id="aiRmfFunctions"></div>
+        <p class="desc" style="margin-top:14px;font-size:0.82rem;">Companion profile: <b>NIST AI 600-1</b> (Generative AI Profile, July 2024) applies these four functions to generative-AI-specific risks.</p>
+      </div>
+
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Final v2.0 · Feb 2024</span>
+        <h2>Cybersecurity Framework (CSF) 2.0</h2>
+        <p class="desc">A broader, sector-agnostic risk framework — not RMF-specific — organized around six functions. Govern was added in 2.0 as the cross-cutting function that directs the other five.</p>
+        <div id="csfFunctions"></div>
+      </div>
+
+      <div class="detail-card">
+        <span class="step-eyebrow">Also worth knowing</span>
+        <h2>Related publications</h2>
+        <div id="otherPubsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROLES PANEL -->
+  <div id="panel-roles" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Two overlapping vocabularies</span>
+        <h2>Legacy (8570) vs. current (8140.03)</h2>
+        <p class="desc">DoD 8570.01-M was officially cancelled Feb 15, 2023 and replaced by DoDM 8140.03, which uses the DoD Cyber Workforce Framework (DCWF) — 74 specific work roles at Basic/Intermediate/Advanced proficiency, instead of the old IAT/IAM/IASAE + Level I-III system. In practice, contracts and job postings still use the legacy IAT/IAM/IASAE language below because contractor policy (DFARS) hasn't fully caught up — so both vocabularies matter day to day.</p>
+      </div>
+
+      <div id="rolesList"></div>
+    </div>
+  </div>
+
+  <!-- GLOSSARY PANEL -->
+  <div id="panel-glossary" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Quick reference</span>
+        <h2>Glossary</h2>
+        <p class="desc">Acronyms and terms used throughout this module and in day-to-day RMF/ISSO work.</p>
+      </div>
+      <div id="glossaryList"></div>
+    </div>
+  </div>
+
+  <!-- DOCUMENTS PANEL -->
+  <div id="panel-docs" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">What's actually in them</span>
+        <h2>Core RMF documents</h2>
+        <p class="desc">The artifacts that move through the RMF process — what each one contains and who owns it.</p>
+      </div>
+      <div id="docsList"></div>
+    </div>
+  </div>
+
+  <!-- SERVICENOW PANEL -->
+  <div id="panel-snow" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Customer's platform</span>
+        <h2>ServiceNow, mapped to RMF/ISSO work</h2>
+        <p class="desc">ServiceNow is a large platform — this covers the parts most relevant to compliance and security work rather than the whole product.</p>
+      </div>
+      <div id="snowModulesList"></div>
+      <div class="detail-card" style="margin-top:20px;">
+        <span class="step-eyebrow">How it maps</span>
+        <h2>RMF concepts → ServiceNow</h2>
+        <table class="domain-table" id="snowMapTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE_KEY_TRACKER = 'rmf-tracker-checks';
+const STORE_KEY_QUIZ = 'rmf-quiz-best';
+
+const STEPS = [
+  {
+    id:1, name:"Prepare",
+    desc:"Establish the organizational and system-level context needed to manage risk before anything else starts.",
+    tasks:[
+      "Identify and assign key risk management roles (AO, ISSM, ISSO, SCA)",
+      "Establish an organization-wide risk management strategy and risk tolerance",
+      "Complete an organizational risk assessment",
+      "Identify and document common (inherited) controls",
+      "Define the system's mission/business purpose and stakeholders",
+      "Determine the authorization boundary for the system"
+    ]
+  },
+  {
+    id:2, name:"Categorize",
+    desc:"Determine the impact levels of the system based on the information it processes, stores, and transmits.",
+    tasks:[
+      "Categorize the system per FIPS 199 (Low / Moderate / High for C-I-A)",
+      "Document the categorization rationale in the SSP",
+      "Register the system of record (e.g., in eMASS)",
+      "Identify the information types processed by the system (per NIST SP 800-60)",
+      "Review and approve categorization with the AO/ISSM"
+    ]
+  },
+  {
+    id:3, name:"Select",
+    desc:"Choose and tailor a control baseline appropriate to the system's categorization and threat context.",
+    tasks:[
+      "Select the initial control baseline (Low/Mod/High) from NIST SP 800-53",
+      "Tailor controls: apply overlays, scoping guidance, and compensating controls",
+      "Designate common vs. hybrid vs. system-specific controls",
+      "Develop the continuous monitoring strategy for the system",
+      "Draft the System Security Plan (SSP) and route for approval"
+    ]
+  },
+  {
+    id:4, name:"Implement",
+    desc:"Put the selected controls into practice and record exactly how each one is satisfied.",
+    tasks:[
+      "Implement each control per the SSP-documented approach",
+      "Configure technical controls (access control, audit logging, encryption, etc.)",
+      "Implement operational and management controls (policies, training, physical security)",
+      "Update the SSP with implementation details and evidence references",
+      "Collect initial implementation evidence for assessors"
+    ]
+  },
+  {
+    id:5, name:"Assess",
+    desc:"Independently verify that implemented controls are working as intended and producing the desired outcome.",
+    tasks:[
+      "Develop the Security Assessment Plan (SAP)",
+      "Assess controls per NIST SP 800-53A assessment procedures",
+      "Document findings in the Security Assessment Report (SAR)",
+      "Identify weaknesses/deficiencies and initial risk ratings",
+      "Build the initial Plan of Action & Milestones (POA&M) for open items"
+    ]
+  },
+  {
+    id:6, name:"Authorize",
+    desc:"Give the Authorizing Official the full risk picture so they can make a formal, risk-based decision.",
+    tasks:[
+      "Assemble the authorization package (SSP, SAR, POA&M, risk assessment)",
+      "Brief the AO on residual risk and outstanding POA&M items",
+      "AO renders a risk determination and acceptance decision",
+      "Issue authorization decision (ATO, ATO with conditions, or DATO)",
+      "Record authorization terms, conditions, and expiration/reauthorization date"
+    ]
+  },
+  {
+    id:7, name:"Monitor",
+    desc:"Keep the authorization current by tracking the system's real security posture on an ongoing basis.",
+    tasks:[
+      "Execute the continuous monitoring strategy (scans, control checks, log reviews)",
+      "Track system changes and assess their security impact",
+      "Update the SSP, SAR, and POA&M as posture changes",
+      "Report security status to the AO/ISSM on the defined cadence",
+      "Maintain a decommissioning/disposal plan for system end-of-life"
+    ]
+  }
+];
+
+const QUIZ = [
+  {cat:"Steps", q:"What are the seven steps of the RMF in order, per NIST SP 800-37 Rev 2?", choices:["Categorize, Select, Prepare, Implement, Assess, Monitor, Authorize","Prepare, Categorize, Select, Implement, Assess, Authorize, Monitor","Select, Categorize, Prepare, Assess, Implement, Authorize, Monitor","Prepare, Select, Categorize, Implement, Authorize, Assess, Monitor"], answer:1, explain:"Rev 2 added 'Prepare' as the first step, ahead of Categorize — it wasn't in the original six-step RMF."},
+  {cat:"Roles", q:"Who makes the final risk-acceptance decision to grant an ATO?", choices:["ISSO","ISSM","Authorizing Official (AO)","Security Control Assessor (SCA)"], answer:2, explain:"The AO is the senior official who formally accepts residual risk on behalf of the organization."},
+  {cat:"Roles", q:"Which role is primarily responsible for the day-to-day operational security of a specific system?", choices:["ISSO","AO","CISO","SCA"], answer:0, explain:"The ISSO manages security for an individual system day-to-day; the ISSM oversees the broader security program."},
+  {cat:"Docs", q:"Which document captures a system's known security weaknesses and the plan/timeline to fix them?", choices:["SSP","SAR","POA&M","SAP"], answer:2, explain:"The Plan of Action & Milestones (POA&M) tracks remediation of identified weaknesses over time."},
+  {cat:"Docs", q:"What does the SAR (Security Assessment Report) contain?", choices:["The control implementation narrative","Findings from independently assessing the controls","The categorization justification","The continuous monitoring schedule"], answer:1, explain:"The SAR documents the assessor's findings on whether controls are implemented correctly and working as intended."},
+  {cat:"Docs", q:"Which document describes exactly how each selected control is implemented for a system?", choices:["POA&M","SAP","SSP","SAR"], answer:2, explain:"The System Security Plan (SSP) is the authoritative record of how controls are implemented."},
+  {cat:"Categorize", q:"FIPS 199 categorization rates a system's impact across which three properties?", choices:["Speed, Cost, Availability","Confidentiality, Integrity, Availability","Confidentiality, Cost, Accountability","Integrity, Accountability, Access"], answer:1, explain:"C-I-A — Confidentiality, Integrity, Availability — each rated Low, Moderate, or High."},
+  {cat:"Categorize", q:"If a system has Confidentiality=Moderate, Integrity=High, Availability=Low, what is its overall FIPS 199 category?", choices:["Low","Moderate","High","Average of the three"], answer:2, explain:"FIPS 199 uses the high-water mark — the overall category equals the highest of the three ratings."},
+  {cat:"Authorize", q:"What does 'ATO with conditions' generally mean?", choices:["The system is denied authorization outright","Authorization is granted contingent on completing specific remediation by a set date","The system only operates during business hours","The AO has delegated the decision to the ISSM"], answer:1, explain:"It's a conditional authorization — operation is allowed while specific POA&M items are resolved on a timeline."},
+  {cat:"Authorize", q:"What is a Denial of Authorization to Operate (DATO)?", choices:["A temporary pause pending more evidence","A formal decision that the system may not operate due to unacceptable risk","An automatic status after 3 years","A step that occurs before Categorize"], answer:1, explain:"A DATO means the AO has determined the risk is unacceptable and the system is not authorized to operate."},
+  {cat:"Monitor", q:"What is the primary purpose of the Monitor step?", choices:["To perform the initial control assessment","To keep the authorization accurate as the system's real posture changes over time","To select the control baseline","To categorize the system"], answer:1, explain:"Monitor is ongoing — tracking changes, reassessing, and keeping the authorization package current."},
+  {cat:"Controls", q:"What is a 'common control' in RMF terms?", choices:["A control unique to one system","A control inherited from a provider (e.g., a shared data center) that multiple systems rely on","A control that's always optional","A control only used during Assess"], answer:1, explain:"Common controls are implemented once at an organizational level and inherited by multiple systems."},
+  {cat:"Controls", q:"Which NIST publication provides the catalog of security controls used in the Select step?", choices:["NIST SP 800-37","NIST SP 800-53","NIST SP 800-53A","NIST SP 800-60"], answer:1, explain:"NIST SP 800-53 is the control catalog; 800-53A provides the assessment procedures for those controls."},
+  {cat:"Controls", q:"Which publication provides assessment procedures for verifying controls during the Assess step?", choices:["NIST SP 800-37","NIST SP 800-53A","NIST SP 800-30","FIPS 199"], answer:1, explain:"800-53A pairs with 800-53 — it tells assessors how to test whether each control is actually working."},
+  {cat:"Tools", q:"What is eMASS primarily used for in DoD RMF workflows?", choices:["Writing firewall rules","Managing and tracking a system's RMF package, controls, and POA&Ms centrally","Running vulnerability scans directly","Replacing the SSP entirely"], answer:1, explain:"eMASS (Enterprise Mission Assurance Support Service) is the system of record for managing RMF packages across DoD."},
+  {cat:"General", q:"Roughly how often must a system's authorization be reassessed under continuous monitoring approaches?", choices:["Once, permanently","On the cadence defined by the org's continuous monitoring strategy, not a fixed one-time event","Every 10 years exactly","Only when a breach occurs"], answer:1, explain:"Ongoing authorization relies on the continuous monitoring strategy set in the Select step, not a single point-in-time review."},
+  {cat:"General", q:"What is the relationship between CMMC and RMF for a DoD contractor?", choices:["They are identical processes","CMMC verifies contractor cybersecurity maturity/compliance with NIST 800-171; RMF is the DoD system authorization process — they can overlap in a contractor environment but serve different purposes","CMMC replaces RMF entirely","RMF only applies to commercial companies"], answer:1, explain:"CMMC assesses a contractor's cybersecurity practices (largely against NIST 800-171); RMF is the framework for authorizing DoD information systems."},
+
+  {cat:"800-53", q:"How many control families does NIST SP 800-53 Rev 5 organize its catalog into?", choices:["12","18","20","25"], answer:2, explain:"Rev 5 added two new families (PT and SR), bringing the total from 18 in Rev 4 up to 20."},
+  {cat:"800-53", q:"Which two control families were newly added in Rev 5?", choices:["AC and AU","PT and SR","CM and CP","SA and SC"], answer:1, explain:"PT (PII Processing and Transparency) and SR (Supply Chain Risk Management) were both new additions in Rev 5."},
+  {cat:"800-53", q:"What does the SR control family cover?", choices:["Software Requirements","Supply Chain Risk Management","System Recovery","Security Reporting"], answer:1, explain:"SR addresses managing cybersecurity risk introduced through an organization's supply chain."},
+  {cat:"800-53", q:"What was the CA control family renamed to in Rev 5 (from 'Security Assessment and Authorization')?", choices:["Compliance and Audit","Assessment, Authorization, and Monitoring","Continuous Assurance","Control Administration"], answer:1, explain:"The rename emphasizes that monitoring is continuous and ongoing, not a one-time event."},
+  {cat:"800-53", q:"Which companion NIST publication provides the assessment procedures for testing 800-53 controls?", choices:["NIST SP 800-37","NIST SP 800-53A","NIST SP 800-60","NIST SP 800-171"], answer:1, explain:"800-53A pairs directly with 800-53, giving assessors step-by-step procedures for verifying each control."},
+  {cat:"800-53", q:"Roughly how many controls does the High baseline contain under Rev 5?", choices:["150","304","392","1,196"], answer:2, explain:"The High baseline decreased from 421 (Rev 4) to 392 controls under Rev 5; Low is 150 and Moderate is 304."},
+
+  {cat:"AI RMF", q:"What are the four core functions of the NIST AI Risk Management Framework?", choices:["Plan, Do, Check, Act","Govern, Map, Measure, Manage","Identify, Protect, Detect, Respond","Assess, Authorize, Monitor, Report"], answer:1, explain:"Govern, Map, Measure, and Manage make up the AI RMF Core, detailed in NIST AI 100-1."},
+  {cat:"AI RMF", q:"Which AI RMF function is described as 'cross-cutting' and sits above the other three?", choices:["Map","Measure","Manage","Govern"], answer:3, explain:"Govern cultivates a risk-management culture and accountability structure that the other three functions operate within."},
+  {cat:"AI RMF", q:"What is the NIST publication number for AI RMF 1.0, and when was it released?", choices:["NIST AI 100-1, January 2023","NIST AI 600-1, July 2024","NIST SP 800-53, September 2020","NIST AI 200-1, March 2022"], answer:0, explain:"AI RMF 1.0 is documented in NIST AI 100-1, released January 26, 2023, and remains the current core version."},
+  {cat:"AI RMF", q:"Is the NIST AI RMF mandatory or certifiable, like an ISO standard?", choices:["Yes, it's a mandatory federal certification","No — it's voluntary and non-certifiable guidance","Only for DoD contractors","Only for systems above Moderate impact"], answer:1, explain:"Unlike ISO/IEC 42001, the AI RMF is voluntary; organizations self-assess and adapt it rather than getting audited against it."},
+  {cat:"AI RMF", q:"What is the Generative AI companion profile to the AI RMF called?", choices:["NIST AI 200-1","NIST AI 600-1","NIST SP 800-218A","NIST AI 100-2"], answer:1, explain:"NIST AI 600-1, released July 2024, applies the four AI RMF functions specifically to generative-AI risks."},
+
+  {cat:"CSF", q:"How many core functions does NIST CSF 2.0 have?", choices:["4","5","6","7"], answer:2, explain:"CSF 2.0 has six functions — the original five (Identify, Protect, Detect, Respond, Recover) plus the new Govern function."},
+  {cat:"CSF", q:"What new function did NIST add in CSF 2.0 that wasn't in CSF 1.1?", choices:["Detect","Govern","Assess","Categorize"], answer:1, explain:"Govern was added as the strategic, cross-cutting function that directs and prioritizes the other five."},
+  {cat:"CSF", q:"When was NIST CSF 2.0 finalized?", choices:["2018","2020","February 2024","2026"], answer:2, explain:"CSF 2.0 was released as a final version in February 2024, after a 2023 public draft period."},
+  {cat:"CSF", q:"Is the NIST Cybersecurity Framework (CSF) the same thing as the RMF?", choices:["Yes, they're interchangeable names for the same process","No — CSF is a broader, sector-agnostic risk framework; RMF is the specific federal system-authorization process","CSF replaced RMF in 2024","CSF only applies to AI systems"], answer:1, explain:"CSF gives a general risk-management taxonomy usable by any organization; RMF is the specific, DoD/federal system authorization lifecycle."},
+  {cat:"Steps", q:"Which step involves independently verifying that implemented controls actually work as intended?", choices:["Select","Implement","Assess","Authorize"], answer:2, explain:"Assess is where an SCA tests the implemented controls against 800-53A procedures and documents results in the SAR."},
+  {cat:"Categorize", q:"What's the purpose of NIST SP 800-60 in the Categorize step?", choices:["It defines control baselines","It helps identify information types and their provisional impact levels","It's the assessment methodology","It's the continuous monitoring guide"], answer:1, explain:"800-60 maps information types to provisional confidentiality/integrity/availability impact levels, feeding FIPS 199 categorization."},
+  {cat:"Docs", q:"What does SAP stand for and when is it produced?", choices:["Security Authorization Package, in Authorize","Security Assessment Plan, in Assess","System Access Policy, in Prepare","Security Action Plan, in Monitor"], answer:1, explain:"The Security Assessment Plan (SAP) lays out scope, methods, and procedures before assessment begins."}
+];
+
+const CGRC_DOMAINS = [
+  {n:1, name:"Security &amp; Privacy Governance, Risk Management, and Compliance Program", weight:"16%", rmf:"Prepare"},
+  {n:2, name:"Scope of the System", weight:"10%", rmf:"Categorize"},
+  {n:3, name:"Selection and Approval of Framework, Security, and Privacy Controls", weight:"14%", rmf:"Select"},
+  {n:4, name:"Implementation of Security and Privacy Controls", weight:"17%", rmf:"Implement"},
+  {n:5, name:"Assessment/Audit of Security and Privacy Controls", weight:"16%", rmf:"Assess"},
+  {n:6, name:"System Compliance", weight:"14%", rmf:"Authorize"},
+  {n:7, name:"Compliance Maintenance", weight:"13%", rmf:"Monitor"}
+];
+
+const EXAM_FACTS = [
+  "125 questions (100 scored + 25 unscored pretest)",
+  "3 hours, Pearson VUE testing centers",
+  "Pass score: 700/1000 (scaled)",
+  "2 yrs paid experience in ≥1 domain — or Associate of ISC2 path (3 yrs to backfill)",
+  "Outline current as of June 15, 2024"
+];
+
+const CERT_TASKS = [
+  "Confirm 2 years qualifying experience across the 7 CGRC domains (or plan the Associate of ISC2 path)",
+  "Read DoDI 8510.01 (RMF for DoD IT) on DoD Cyber Exchange",
+  "Complete CDSE/STEPP's free CS101–CS107 + CS124 RMF course set",
+  "Review the official ISC2 CGRC Exam Outline domain-by-domain",
+  "Complete RMF for DoD IT training (BAI via NICCS — 4 days, + optional eMASS day)",
+  "Work through ISC2's official CGRC practice tests / flashcards",
+  "Schedule the Pearson VUE exam date",
+  "Submit the endorsement form after passing"
+];
+
+const REF_LINKS = [
+  {label:"DoD Cyber Exchange", url:"https://public.cyber.mil", note:"DoDI 8510.01, policy docs, awareness training"},
+  {label:"ISC2 — CGRC Certification", url:"https://www.isc2.org/Certifications/CGRC", note:"Exam outline, self-study resources"},
+  {label:"NICCS Training Catalog", url:"https://niccs.cisa.gov/training/catalog", note:"Search 'RMF for DoD IT' — BAI course listing"},
+  {label:"NIST SP 800-37 Rev 2", url:"https://csrc.nist.gov/pubs/sp/800/37/r2/upd1/final", note:"The RMF source document"}
+];
+
+const AGENCY_SOURCES = [
+  {label:"CDSE / STEPP — CS124: Intro to RMF", url:"https://www.cdse.edu/Training/eLearning/CS124/", note:"DCSA-official, free, ~1-2 hrs, foundational overview"},
+  {label:"CDSE / STEPP — CS101–CS107: RMF step-by-step", url:"https://www.cdse.edu/Training/eLearning/CS101/", note:"One free course per RMF step (Categorize through Monitor)"},
+  {label:"CDSE / STEPP — CS200: Continuous Monitoring", url:"https://www.cdse.edu/Training/eLearning/CS200/", note:"Free, focused on the Monitor step in depth"},
+  {label:"CDSE — CS100.CU curriculum bundle", url:"https://www.cdse.edu/Training/Curricula/CS100/", note:"Bundles the full RMF course set into one curriculum"}
+];
+
+const COLLEGE_SOURCES = [
+  {label:"RIT — Cybersecurity Risk Management (edX, audit free)", url:"https://www.edx.org/course/cybersecurity-risk-management", note:"Rochester Institute of Technology, part of the RITx Cybersecurity MicroMasters; audit track is free, no certificate"},
+  {label:"Kennesaw State University — Cybersecurity Risk Management Frameworks (Coursera, free to audit)", url:"https://www.coursera.org/specializations/cybersecurity-risk-management-frameworks", note:"Covers NIST & ISO risk frameworks; taught by Whitman & Mattord, well-known textbook authors in the field"}
+];
+
+const SELF_PACED_SOURCES = [
+  {label:"Udemy — Implementing the NIST RMF (Jason Dion)", url:"https://www.udemy.com/course/nist-risk-management-framework/", note:"4.6★, 1,548 reviews, 5.5 hrs — Dion is a widely-used cert trainer, solid pick"},
+  {label:"Udemy — NIST RMF for Beginners: Zero to Hero (Paul Oyelakin)", url:"https://www.udemy.com/course/fismacompliance/", note:"4.6★, 2,468 reviews, 5 hrs — simulated-learning approach, good first pass"},
+  {label:"Udemy — CGRC Prep Exam based on NIST SP 800-37 Rev 2", url:"https://www.udemy.com/course/cap-practice-exam-based-on-nist-sp-800-37-rev-2-experience-j/", note:"325 practice Q&A across 5 tests, built by a Maryland RMF training shop"},
+  {label:"Udemy — ISC2 CGRC Exam Prep Questions (updated for 2024 syllabus)", url:"https://www.udemy.com/course/isc2-certified-grc-cgrc-examination-preparation/", note:"4 full 125-question practice tests aligned to the current outline"},
+  {label:"Udemy — NIST AI RMF courses (several)", url:"https://www.udemy.com/topic/nist-risk-management-framework-rmf/", note:"Newer listings, thinner review history than the RMF-core courses above — skim the syllabus before committing time"},
+  {label:"Coursera — NIST DoD RMF", url:"https://www.coursera.org/learn/nist-dod-rmf", note:"Structured modules + graded assignment, part of a broader RMF specialization"}
+];
+
+/* ---------- STORAGE HELPERS ---------- */
+async function loadJSON(key, fallback){
+  try{
+    const res = await window.storage.get(key, false);
+    return res ? JSON.parse(res.value) : fallback;
+  }catch(e){ return fallback; }
+}
+async function saveJSON(key, obj){
+  try{ await window.storage.set(key, JSON.stringify(obj), false); }
+  catch(e){ console.error('storage save failed', e); }
+}
+
+/* ---------- TRACKER ---------- */
+let checks = {}; // {stepId: [bool,...]}
+let selectedStep = 1;
+
+function totalTasks(){ return STEPS.reduce((s,st)=>s+st.tasks.length,0); }
+function completedTasks(){
+  let c=0;
+  STEPS.forEach(st=>{ (checks[st.id]||[]).forEach(v=>{ if(v) c++; }); });
+  return c;
+}
+function stepDone(st){
+  const arr = checks[st.id]||[];
+  return st.tasks.length>0 && arr.filter(Boolean).length===st.tasks.length;
+}
+
+function renderWheel(){
+  const box = document.getElementById('wheel');
+  box.innerHTML = '<div class="wheel-center"><div class="pct" id="pctNum">0%</div><div class="lbl">Overall</div></div>';
+  const R = 128, cx=160, cy=160;
+  STEPS.forEach((st,i)=>{
+    const angle = (Math.PI*2 * i/STEPS.length) - Math.PI/2;
+    const x = cx + R*Math.cos(angle) - 32;
+    const y = cy + R*Math.sin(angle) - 32;
+    const node = document.createElement('div');
+    node.className = 'node' + (stepDone(st)?' done':'') + (st.id===selectedStep?' selected':'');
+    node.style.left = x+'px';
+    node.style.top = y+'px';
+    node.innerHTML = `<div class="num">${st.id}</div>`;
+    node.title = st.name;
+    node.onclick = ()=>{ selectedStep = st.id; renderAll(); };
+    box.appendChild(node);
+  });
+}
+
+function renderDetail(){
+  const st = STEPS.find(s=>s.id===selectedStep);
+  const arr = checks[st.id] || (checks[st.id] = st.tasks.map(()=>false));
+  const card = document.getElementById('detailCard');
+  const doneCount = arr.filter(Boolean).length;
+  card.innerHTML = `
+    <span class="step-eyebrow">Step ${st.id} of 7</span>
+    <h2>${st.name}</h2>
+    <p class="desc">${st.desc}</p>
+    <div id="taskList"></div>
+    <div class="progress-row">
+      <span>${doneCount}/${st.tasks.length}</span>
+      <div class="progress-track"><div class="progress-fill" style="width:${st.tasks.length? (doneCount/st.tasks.length*100):0}%"></div></div>
+    </div>
+    <span class="reset-link" id="resetStep">Clear this step</span>
+  `;
+  const list = card.querySelector('#taskList');
+  st.tasks.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'task' + (arr[i]?' checked':'');
+    row.innerHTML = `<input type="checkbox" id="t${st.id}-${i}" ${arr[i]?'checked':''}><label for="t${st.id}-${i}">${t}</label>`;
+    row.querySelector('input').onchange = (e)=>{
+      arr[i] = e.target.checked;
+      saveJSON(STORE_KEY_TRACKER, checks);
+      renderAll();
+    };
+    list.appendChild(row);
+  });
+  card.querySelector('#resetStep').onclick = ()=>{
+    checks[st.id] = st.tasks.map(()=>false);
+    saveJSON(STORE_KEY_TRACKER, checks);
+    renderAll();
+  };
+}
+
+function renderAll(){
+  renderWheel();
+  renderDetail();
+  const pct = totalTasks()? Math.round(completedTasks()/totalTasks()*100) : 0;
+  const pctEl = document.getElementById('pctNum');
+  if(pctEl) pctEl.textContent = pct+'%';
+}
+
+/* ---------- STUDY ---------- */
+let quizOrder = [];
+let quizIdx = 0;
+let activeFilter = "All";
+let sessionScore = 0;
+let sessionAnswered = 0;
+let bestScore = 0;
+let locked = false;
+
+function categories(){
+  return ["All", ...Array.from(new Set(QUIZ.map(q=>q.cat)))];
+}
+
+function buildFilters(){
+  const wrap = document.getElementById('filters');
+  wrap.innerHTML = '';
+  categories().forEach(c=>{
+    const b = document.createElement('button');
+    b.textContent = c;
+    if(c===activeFilter) b.className='active';
+    b.onclick = ()=>{ activeFilter=c; startQuizSet(); };
+    wrap.appendChild(b);
+  });
+}
+
+function startQuizSet(){
+  const pool = activeFilter==="All" ? QUIZ : QUIZ.filter(q=>q.cat===activeFilter);
+  quizOrder = pool.map((_,i)=>i).sort(()=>Math.random()-0.5);
+  // map back to actual QUIZ objects from filtered pool
+  quizOrder = pool;
+  quizIdx = 0;
+  sessionScore = 0;
+  sessionAnswered = 0;
+  buildFilters();
+  document.getElementById('scoreTotal').textContent = quizOrder.length;
+  document.getElementById('scoreNum').textContent = 0;
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const area = document.getElementById('studyArea');
+  if(quizIdx >= quizOrder.length){
+    area.innerHTML = `<div class="card done-screen">
+      <div class="big">${sessionScore}/${quizOrder.length}</div>
+      <p style="color:var(--ink-soft);margin-top:6px;">Session complete.</p>
+      <button class="next-btn" id="restartBtn" style="margin-top:14px;">Study again</button>
+    </div>`;
+    document.getElementById('restartBtn').onclick = startQuizSet;
+    if(sessionScore > bestScore){
+      bestScore = sessionScore;
+      saveJSON(STORE_KEY_QUIZ, {best:bestScore});
+    }
+    return;
+  }
+  const q = quizOrder[quizIdx];
+  locked = false;
+  area.innerHTML = `
+    <div class="card">
+      <div class="cat">${q.cat}</div>
+      <p class="q">${q.q}</p>
+      <div class="choices" id="choicesWrap"></div>
+      <div class="explain" id="explainBox">${q.explain}</div>
+      <div class="study-nav">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:rgba(246,243,234,0.55);">Question ${quizIdx+1} of ${quizOrder.length}</span>
+        <button class="next-btn" id="nextBtn" disabled>Next</button>
+      </div>
+    </div>
+  `;
+  const cWrap = document.getElementById('choicesWrap');
+  q.choices.forEach((choiceText,i)=>{
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.textContent = choiceText;
+    b.onclick = ()=>{
+      if(locked) return;
+      locked = true;
+      sessionAnswered++;
+      const correct = i===q.answer;
+      if(correct) sessionScore++;
+      Array.from(cWrap.children).forEach((el,j)=>{
+        el.classList.add('locked');
+        if(j===q.answer) el.classList.add('correct');
+        else if(j===i) el.classList.add('wrong');
+      });
+      document.getElementById('explainBox').classList.add('show');
+      document.getElementById('nextBtn').disabled = false;
+      document.getElementById('scoreNum').textContent = sessionScore;
+    };
+    cWrap.appendChild(b);
+  });
+  document.getElementById('nextBtn').onclick = ()=>{
+    quizIdx++;
+    renderQuestion();
+  };
+}
+
+/* ---------- CERTS & TRAINING ---------- */
+const STORE_KEY_CERTS = 'rmf-cert-checks';
+let certChecks = [];
+
+function renderCertStatics(){
+  document.getElementById('examFacts').innerHTML =
+    EXAM_FACTS.map(f=>`<span>${f}</span>`).join('');
+
+  const table = document.getElementById('domainTable');
+  table.innerHTML = `
+    <tr><th>Domain</th><th>Weight</th><th>RMF Step</th></tr>
+    ${CGRC_DOMAINS.map(d=>`<tr><td>${d.n}. ${d.name}</td><td class="wt">${d.weight}</td><td class="rmf">${d.rmf}</td></tr>`).join('')}
+  `;
+
+  document.getElementById('linkList').innerHTML = REF_LINKS.map(l=>
+    `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
+  ).join('');
+  document.getElementById('agencySources').innerHTML = AGENCY_SOURCES.map(l=>
+    `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
+  ).join('');
+  document.getElementById('collegeSources').innerHTML = COLLEGE_SOURCES.map(l=>
+    `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
+  ).join('');
+  document.getElementById('selfPacedSources').innerHTML = SELF_PACED_SOURCES.map(l=>
+    `<div class="link-row"><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a><span class="note">${l.note}</span></div>`
+  ).join('');
+}
+
+function renderCertChecklist(){
+  if(certChecks.length !== CERT_TASKS.length){
+    certChecks = CERT_TASKS.map((_,i)=> certChecks[i] || false);
+  }
+  const list = document.getElementById('certTaskList');
+  list.innerHTML = '';
+  CERT_TASKS.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'task' + (certChecks[i] ? ' checked' : '');
+    row.innerHTML = `<input type="checkbox" id="cert${i}" ${certChecks[i]?'checked':''}><label for="cert${i}">${t}</label>`;
+    row.querySelector('input').onchange = (e)=>{
+      certChecks[i] = e.target.checked;
+      saveJSON(STORE_KEY_CERTS, certChecks);
+      renderCertChecklist();
+    };
+    list.appendChild(row);
+  });
+  const done = certChecks.filter(Boolean).length;
+  document.getElementById('certProgressLabel').textContent = `${done}/${CERT_TASKS.length}`;
+  document.getElementById('certProgressFill').style.width = (done/CERT_TASKS.length*100)+'%';
+}
+
+const SP53_FAMILIES = [
+  {code:"AC", name:"Access Control"}, {code:"AT", name:"Awareness and Training"},
+  {code:"AU", name:"Audit and Accountability"}, {code:"CA", name:"Assessment, Authorization, and Monitoring"},
+  {code:"CM", name:"Configuration Management"}, {code:"CP", name:"Contingency Planning"},
+  {code:"IA", name:"Identification and Authentication"}, {code:"IR", name:"Incident Response"},
+  {code:"MA", name:"Maintenance"}, {code:"MP", name:"Media Protection"},
+  {code:"PE", name:"Physical and Environmental Protection"}, {code:"PL", name:"Planning"},
+  {code:"PM", name:"Program Management"}, {code:"PS", name:"Personnel Security"},
+  {code:"PT", name:"PII Processing and Transparency (new in Rev 5)"}, {code:"RA", name:"Risk Assessment"},
+  {code:"SA", name:"System and Services Acquisition"}, {code:"SC", name:"System and Communications Protection"},
+  {code:"SI", name:"System and Information Integrity"}, {code:"SR", name:"Supply Chain Risk Management (new in Rev 5)"}
+];
+
+const AI_RMF_FUNCTIONS = [
+  {name:"Govern", desc:"Cross-cutting — cultivates a culture of AI risk management, establishes accountability, and sets policy across the whole AI lifecycle. Sits above the other three."},
+  {name:"Map", desc:"Scoping — establishes context, inventories AI systems, and identifies categories of potential impact and risk."},
+  {name:"Measure", desc:"Analyzes, benchmarks, and monitors AI risks and trustworthiness using quantitative and qualitative methods."},
+  {name:"Manage", desc:"Allocates resources to prioritized risks — mitigate, transfer, avoid, or accept — and covers incident response and recovery."}
+];
+
+const CSF_FUNCTIONS = [
+  {name:"Govern", desc:"New in 2.0 — cybersecurity strategy, roles, policy, and oversight; informs and prioritizes the other five functions."},
+  {name:"Identify", desc:"Understand assets, vulnerabilities, threats, and risk tolerance across the organization."},
+  {name:"Protect", desc:"Safeguards to ensure delivery of critical services and limit/contain a potential incident."},
+  {name:"Detect", desc:"Activities to identify the occurrence of a cybersecurity event in a timely manner."},
+  {name:"Respond", desc:"Actions taken regarding a detected incident — containment, mitigation, reporting."},
+  {name:"Recover", desc:"Restore capabilities or services impaired by an incident, and communicate during recovery."}
+];
+
+const OTHER_PUBS = [
+  {label:"NIST SP 800-53A", note:"Assessment procedures for testing 800-53 controls"},
+  {label:"NIST SP 800-171", note:"Protecting CUI in nonfederal systems — basis for CMMC"},
+  {label:"NIST SP 800-60", note:"Maps information types to FIPS 199 impact levels"},
+  {label:"FIPS 199 / FIPS 200", note:"Categorization standard / minimum security requirements"}
+];
+
+function renderNistLibrary(){
+  document.getElementById('sp53Table').innerHTML = `
+    <tr><th>Code</th><th>Control Family</th></tr>
+    ${SP53_FAMILIES.map(f=>`<tr class="jump-row" data-code="${f.code}"><td class="wt">${f.code}</td><td>${f.name}</td></tr>`).join('')}
+  `;
+  document.querySelectorAll('#sp53Table .jump-row').forEach(row=>{
+    row.onclick = ()=>{
+      const code = row.getAttribute('data-code');
+      if(typeof window.grcJumpToControlFamily === 'function'){
+        window.grcJumpToControlFamily(code);
+      } else {
+        console.log('grcJumpToControlFamily hook not defined yet — see integration guide.');
+      }
+    };
+  });
+  document.getElementById('aiRmfFunctions').innerHTML = AI_RMF_FUNCTIONS.map(f=>
+    `<div class="func-row"><span class="func-badge">${f.name}</span><span class="func-text">${f.desc}</span></div>`
+  ).join('');
+  document.getElementById('csfFunctions').innerHTML = CSF_FUNCTIONS.map(f=>
+    `<div class="func-row"><span class="func-badge">${f.name}</span><span class="func-text">${f.desc}</span></div>`
+  ).join('');
+  document.getElementById('otherPubsList').innerHTML = OTHER_PUBS.map(p=>
+    `<div class="link-row"><b>${p.label}</b><span class="note">${p.note}</span></div>`
+  ).join('');
+}
+
+const CERT_LANDSCAPE = [
+  {tier:"standard", name:"CGRC (ISC2)", note:"Referenced directly in DoD 8140.03 as a qualifying certification for RMF-related workforce roles. This is the one that actually matters for hiring and DoD workforce compliance."},
+  {tier:"niche", name:"RMF Foundation / RMF Lead Implementer (ITCERTS)", note:"Real proctored exams (40 questions, 60 min, 70% to pass), but from a small private certifying body — not DoD 8140-recognized or widely requested in job postings."},
+  {tier:"niche", name:"Vendor boot-camp certs (e.g. 'RMF 2.0 for DoD/IC')", note:"Some training companies sell their own exam alongside the course. Fine as structured training, but it's the vendor's own credential, not an industry-standard one."},
+  {tier:"niche", name:"Certified NIST AI RMF 1.0 Architect (CIS)", note:"A real, accredited credential — but for the AI RMF (Govern/Map/Measure/Manage), a separate framework from system-authorization RMF. Relevant only if AI systems enter scope."}
+];
+
+function renderCertLandscape(){
+  document.getElementById('certLandscapeList').innerHTML = CERT_LANDSCAPE.map(c=>`
+    <div class="cert-row">
+      <div class="cert-row-head">
+        <b>${c.name}</b>
+        <span class="tier-badge tier-${c.tier}">${c.tier==='standard'?'Industry standard':'Niche / vendor'}</span>
+      </div>
+      <p>${c.note}</p>
+    </div>
+  `).join('');
+}
+
+const ROLES = [
+  {
+    code:"AO", title:"Authorizing Official", category:"Executive / senior leader — no fixed IAT/IAM level",
+    desc:"The senior official who formally accepts risk on the organization's behalf and grants — or denies — authorization to operate.",
+    duties:["Reviews the full authorization package (SSP, SAR, POA&M)","Renders the final risk-acceptance decision (ATO, ATO w/ conditions, or DATO)","Sets authorization conditions and the reauthorization timeline","Ultimately accountable for the system's operational risk"],
+    certs:["Often CISSP or CISM at senior levels","No universal 8140 baseline cert — requirement varies by DoD Component and seniority"],
+    rmf:"Authorize (decision authority)"
+  },
+  {
+    code:"ISSM", title:"Information System Security Manager", category:"Legacy IAM Level II–III",
+    desc:"Owns the security program across a portfolio of systems — sits above the ISSO in the supervision chain.",
+    duties:["Sets organizational security policy and resourcing","Supervises ISSOs across multiple systems","Reviews and endorses authorization packages before they reach the AO","Owns the risk management strategy at the organizational level"],
+    certs:["CISSP — near-universal expectation at this level","CISM","CGRC — useful added credibility for RMF-specific work"],
+    rmf:"Program-wide oversight, all steps"
+  },
+  {
+    code:"ISSO", title:"Information System Security Officer", category:"Legacy IAM Level I",
+    desc:"Owns day-to-day security for one specific system — the role most directly tied to the RMF Tracker in this module.",
+    duties:["Maintains the SSP as the system changes","Tracks and updates the POA&M","Coordinates with the SCA during assessments","Reports status up to the ISSM"],
+    certs:["Security+ — most common entry-level baseline","CGRC — directly aligned with ISSO/authorization work","CySA+ for more technical ISSO roles","CISSP for senior ISSO positions"],
+    rmf:"Day-to-day, especially Implement & Monitor"
+  },
+  {
+    code:"ISSE", title:"Information System Security Engineer", category:"Legacy IASAE Level I–III",
+    desc:"Engineers security into the system's architecture during design and development — not documented after the fact, built in from the start.",
+    duties:["Translates security requirements into system/architecture design","Works within the SDLC alongside system engineers","Recommends and integrates technical controls","Supports secure-by-design decisions ahead of Implement"],
+    certs:["CASP+ / SecurityX — common IASAE baseline","CISSP-ISSEP — CISSP plus the systems-engineering concentration","CISSP"],
+    rmf:"Select & Implement (designs controls in)"
+  },
+  {
+    code:"SCA", title:"Security Control Assessor", category:"Independent assessor role",
+    desc:"Independently tests whether implemented controls actually work. Independence from the system team is the entire point — an SCA shouldn't assess their own work.",
+    duties:["Develops the Security Assessment Plan (SAP)","Executes NIST SP 800-53A assessment procedures","Documents findings in the Security Assessment Report (SAR)","Flags deficiencies that feed the POA&M"],
+    certs:["CISSP — common expectation","CGRC — directly relevant to authorization-focused assessment","Technical testing certs (e.g. CySA+) for hands-on assessors"],
+    rmf:"Assess"
+  },
+  {
+    code:"SA", title:"System Administrator", category:"Legacy IAT Level I–III",
+    desc:"Operates and maintains the actual system — the one implementing the technical controls the ISSO/ISSE call for.",
+    duties:["Account and access management","Patching and configuration management","Backup and system maintenance","Executes technical controls under ISSO/ISSE direction"],
+    certs:["Security+ — IAT Level I/II baseline","CySA+ or CASP+/SecurityX — IAT Level III baseline","Required level scales with network privilege, not job title"],
+    rmf:"Implement & Monitor (executes technical controls)"
+  }
+];
+
+function renderRoles(){
+  document.getElementById('rolesList').innerHTML = ROLES.map(r=>`
+    <div class="role-card">
+      <div class="role-head">
+        <span class="role-code">${r.code}</span>
+        <span class="role-title">${r.title}</span>
+      </div>
+      <div class="role-category">${r.category}</div>
+      <p class="role-desc">${r.desc}</p>
+      <div class="role-cols">
+        <div class="role-col">
+          <div class="role-col-label">What they do</div>
+          <ul>${r.duties.map(d=>`<li>${d}</li>`).join('')}</ul>
+        </div>
+        <div class="role-col">
+          <div class="role-col-label">Typical certs</div>
+          <ul>${r.certs.map(c=>`<li>${c}</li>`).join('')}</ul>
+        </div>
+      </div>
+      <span class="role-rmf-tag">RMF: ${r.rmf}</span>
+    </div>
+  `).join('');
+}
+
+const GLOSSARY = [
+  {term:"ATO", full:"Authorization to Operate", def:"The AO's formal decision that a system may operate given its documented risk."},
+  {term:"ATO w/ conditions", full:"Conditional ATO", def:"Operation is permitted while specific POA&M items are resolved by a set date."},
+  {term:"DATO", full:"Denial of Authorization to Operate", def:"The AO determines risk is unacceptable — the system may not operate."},
+  {term:"cATO", full:"Continuous ATO", def:"An authorization sustained through continuous monitoring rather than periodic reassessment — the end goal of a mature Monitor step."},
+  {term:"SSP", full:"System Security Plan", def:"The authoritative document describing how each selected control is implemented for a system."},
+  {term:"SAP", full:"Security Assessment Plan", def:"Defines scope, methods, and procedures before a control assessment begins."},
+  {term:"SAR", full:"Security Assessment Report", def:"The assessor's findings on whether controls are implemented correctly and working as intended."},
+  {term:"POA&M", full:"Plan of Action & Milestones", def:"Tracks known weaknesses and the timeline/plan to remediate them."},
+  {term:"eMASS", full:"Enterprise Mission Assurance Support Service", def:"DoD's system of record for managing RMF packages, controls, and POA&Ms."},
+  {term:"CUI", full:"Controlled Unclassified Information", def:"Unclassified information that still requires safeguarding per law, regulation, or policy — a common CMMC/800-171 trigger."},
+  {term:"FISMA", full:"Federal Information Security Modernization Act", def:"The law requiring federal agencies (and by extension their systems) to implement information security programs — RMF is how that gets executed."},
+  {term:"DCWF", full:"DoD Cyber Workforce Framework", def:"The 74 work-role taxonomy underlying DoDM 8140.03, replacing the old IAT/IAM/IASAE categories."},
+  {term:"SCF", full:"Secure Controls Framework", def:"A meta-framework/crosswalk mapping controls across NIST, ISO, CMMC, and other standards — what your grc-toolkit's SCF Explorer tab uses."},
+  {term:"OSCAL", full:"Open Security Controls Assessment Language", def:"NIST's machine-readable format for SSPs, assessment plans, and results — enables automation across GRC tools."},
+  {term:"AO", full:"Authorizing Official", def:"The senior official who accepts risk and grants/denies the ATO."},
+  {term:"CMMC", full:"Cybersecurity Maturity Model Certification", def:"Verifies a DoD contractor's cybersecurity practices, largely against NIST 800-171 — distinct from but related to RMF."}
+];
+
+const RMF_DOCS = [
+  {code:"SSP", name:"System Security Plan", owner:"Owned by ISSO, approved by ISSM/AO", produced:"Select → updated through Implement", items:["System description, boundary, and categorization","Every selected control and how it's specifically implemented","References to supporting evidence/artifacts","Living document — updated whenever the system changes"]},
+  {code:"SAP", name:"Security Assessment Plan", owner:"Owned by the SCA", produced:"Start of Assess", items:["Scope of the assessment (which controls, which systems)","Assessment methods: examine, interview, test","Rules of engagement and assessor roles","Timeline for the assessment"]},
+  {code:"SAR", name:"Security Assessment Report", owner:"Owned by the SCA", produced:"End of Assess", items:["Findings for each assessed control — satisfied / not satisfied","Risk rating for each identified weakness","Evidence referenced for each finding","Recommendations that feed the POA&M"]},
+  {code:"POA&M", name:"Plan of Action & Milestones", owner:"Owned by ISSO, tracked in eMASS", produced:"Assess → maintained through Monitor", items:["Each open weakness/deficiency","Planned remediation action and resources needed","Milestones and target completion dates","Status updates as items close or slip"]},
+  {code:"Auth Package", name:"Authorization Package", owner:"Assembled by ISSO/ISSM for the AO", produced:"Authorize", items:["SSP, SAR, and POA&M bundled together","Risk assessment summary","AO's decision — ATO, ATO w/ conditions, or DATO","Authorization terms and reauthorization date"]}
+];
+
+const SNOW_MODULES = [
+  {name:"GRC (Governance, Risk, Compliance)", tag:"Most relevant to your work", note:"Policy & compliance management, risk register, control mapping, audit management. This is where POA&M-style tracking and control-to-framework mapping typically live in ServiceNow."},
+  {name:"SecOps — Vulnerability Response (VR)", tag:"Security-relevant", note:"Ingests scanner data (Tenable, Qualys, Rapid7), maps vulnerabilities to CMDB assets, and drives remediation tasks — feeds directly into POA&M-type tracking."},
+  {name:"SecOps — Security Incident Response (SIR)", tag:"Security-relevant", note:"Manages the security incident lifecycle from detection through remediation, often fed by SIEM tools."},
+  {name:"ITSM (Incident, Problem, Change)", tag:"Foundational", note:"Core ticketing — incidents, root-cause/problem records, and change requests. Remediation work from GRC/VR typically flows into ITSM change tickets to actually get fixed."},
+  {name:"CMDB (Configuration Management Database)", tag:"Foundational", note:"The asset/system inventory everything else references — controls, vulnerabilities, and incidents all tie back to CMDB records."}
+];
+
+const SNOW_MAP = [
+  {rmf:"POA&M item", snow:"GRC issue/risk record, or a VR remediation task"},
+  {rmf:"SSP control implementation", snow:"GRC control record mapped to a policy/framework"},
+  {rmf:"Assessment finding (SAR)", snow:"GRC audit finding or a VR vulnerability record"},
+  {rmf:"System/authorization boundary", snow:"CMDB configuration item (CI) and its relationships"},
+  {rmf:"Continuous monitoring", snow:"VR scan cadence + GRC continuous control monitoring"},
+  {rmf:"Remediation execution", snow:"ITSM change/incident ticket linked back to the GRC or VR record"}
+];
+
+function renderOverview(){
+  const trackerPct = totalTasks() ? Math.round(completedTasks()/totalTasks()*100) : 0;
+  const certDone = certChecks.filter(Boolean).length;
+  const box = document.getElementById('overviewStats');
+  box.innerHTML = `
+    <div class="stat-box" data-jump="tracker"><div class="stat-num">${trackerPct}%</div><div class="stat-lbl">RMF Tracker</div></div>
+    <div class="stat-box" data-jump="study"><div class="stat-num">${bestScore}/${QUIZ.length}</div><div class="stat-lbl">Best Quiz Score</div></div>
+    <div class="stat-box" data-jump="certs"><div class="stat-num">${certDone}/${CERT_TASKS.length}</div><div class="stat-lbl">CGRC Prep Steps</div></div>
+  `;
+  box.querySelectorAll('.stat-box').forEach(el=>{
+    el.onclick = ()=>document.getElementById('tab-'+el.getAttribute('data-jump')).click();
+  });
+}
+
+function renderGlossary(){
+  document.getElementById('glossaryList').innerHTML = GLOSSARY.map(g=>`
+    <div class="glossary-row">
+      <div class="glossary-term"><b>${g.term}</b><span>${g.full}</span></div>
+      <p>${g.def}</p>
+    </div>
+  `).join('');
+}
+
+function renderDocs(){
+  document.getElementById('docsList').innerHTML = RMF_DOCS.map(d=>`
+    <div class="doc-card">
+      <div class="doc-head"><span class="doc-code">${d.code}</span><span class="doc-title">${d.name}</span></div>
+      <div class="doc-owner">${d.owner} · ${d.produced}</div>
+      <ul>${d.items.map(i=>`<li>${i}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+}
+
+function renderServiceNow(){
+  document.getElementById('snowModulesList').innerHTML = SNOW_MODULES.map(m=>`
+    <div class="cert-row">
+      <div class="cert-row-head"><b>${m.name}</b><span class="tier-badge tier-standard">${m.tag}</span></div>
+      <p>${m.note}</p>
+    </div>
+  `).join('');
+  document.getElementById('snowMapTable').innerHTML = `
+    <tr><th>RMF concept</th><th>Typical ServiceNow equivalent</th></tr>
+    ${SNOW_MAP.map(m=>`<tr><td>${m.rmf}</td><td>${m.snow}</td></tr>`).join('')}
+  `;
+}
+
+/* ---------- TABS ---------- */
+const TAB_IDS = ['overview','tracker','study','certs','nist','roles','glossary','docs','snow'];
+TAB_IDS.forEach(id=>{
+  document.getElementById('tab-'+id).onclick = ()=>{
+    TAB_IDS.forEach(other=>{
+      document.getElementById('tab-'+other).classList.toggle('active', other===id);
+      document.getElementById('panel-'+other).classList.toggle('active', other===id);
+    });
+    if(id === 'overview') renderOverview();
+  };
+});
+
+/* ---------- INIT ---------- */
+(async function init(){
+  checks = await loadJSON(STORE_KEY_TRACKER, {});
+  const quizSave = await loadJSON(STORE_KEY_QUIZ, {best:0});
+  bestScore = quizSave.best || 0;
+  certChecks = await loadJSON(STORE_KEY_CERTS, []);
+  renderAll();
+  buildFilters();
+  startQuizSet();
+  renderCertStatics();
+  renderCertLandscape();
+  renderCertChecklist();
+  renderNistLibrary();
+  renderRoles();
+  renderGlossary();
+  renderDocs();
+  renderServiceNow();
+  renderOverview();
+})();
+</script>
+</body>
+</html>
