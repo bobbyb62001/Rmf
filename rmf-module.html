@@ -134,6 +134,19 @@
   .tier-badge.tier-standard{background:rgba(91,117,83,0.18);color:var(--olive);}
   .tier-badge.tier-niche{background:rgba(200,155,60,0.18);color:var(--amber-dim);}
   .cert-row p{margin:0;font-size:0.84rem;color:var(--ink-soft);line-height:1.4;}
+
+  /* ---- ROLES ---- */
+  .role-card{background:var(--paper);color:var(--ink);border-radius:10px;padding:22px 24px;margin-bottom:16px;}
+  .role-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .role-code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:0.78rem;background:var(--navy-panel);color:var(--amber);padding:3px 9px;border-radius:5px;}
+  .role-title{font-family:'Source Serif 4',serif;font-size:1.2rem;font-weight:700;}
+  .role-category{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;}
+  .role-desc{font-size:0.9rem;color:var(--ink-soft);margin:6px 0 14px;line-height:1.45;}
+  .role-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:600px){.role-cols{grid-template-columns:1fr;}}
+  .role-col-label{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber-dim);margin-bottom:6px;}
+  .role-col ul{margin:0;padding-left:18px;font-size:0.85rem;line-height:1.55;}
+  .role-rmf-tag{display:inline-block;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;background:rgba(74,108,140,0.12);color:var(--slateblue);padding:3px 9px;border-radius:5px;}
   .func-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--paper-dim);align-items:flex-start;}
   .func-row:first-of-type{border-top:none;}
   .func-badge{flex-shrink:0;width:88px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:var(--navy-panel);color:var(--amber);padding:5px 4px;border-radius:5px;}
@@ -153,6 +166,7 @@
       <button id="tab-study">Study</button>
       <button id="tab-certs">Certs &amp; Training</button>
       <button id="tab-nist">NIST Library</button>
+      <button id="tab-roles">Roles</button>
     </div>
   </header>
 
@@ -259,6 +273,19 @@
         <h2>Related publications</h2>
         <div id="otherPubsList"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ROLES PANEL -->
+  <div id="panel-roles" class="panel">
+    <div class="cert-layout">
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Two overlapping vocabularies</span>
+        <h2>Legacy (8570) vs. current (8140.03)</h2>
+        <p class="desc">DoD 8570.01-M was officially cancelled Feb 15, 2023 and replaced by DoDM 8140.03, which uses the DoD Cyber Workforce Framework (DCWF) — 74 specific work roles at Basic/Intermediate/Advanced proficiency, instead of the old IAT/IAM/IASAE + Level I-III system. In practice, contracts and job postings still use the legacy IAT/IAM/IASAE language below because contractor policy (DFARS) hasn't fully caught up — so both vocabularies matter day to day.</p>
+      </div>
+
+      <div id="rolesList"></div>
     </div>
   </div>
 </div>
@@ -754,8 +781,77 @@ function renderCertLandscape(){
   `).join('');
 }
 
+const ROLES = [
+  {
+    code:"AO", title:"Authorizing Official", category:"Executive / senior leader — no fixed IAT/IAM level",
+    desc:"The senior official who formally accepts risk on the organization's behalf and grants — or denies — authorization to operate.",
+    duties:["Reviews the full authorization package (SSP, SAR, POA&M)","Renders the final risk-acceptance decision (ATO, ATO w/ conditions, or DATO)","Sets authorization conditions and the reauthorization timeline","Ultimately accountable for the system's operational risk"],
+    certs:["Often CISSP or CISM at senior levels","No universal 8140 baseline cert — requirement varies by DoD Component and seniority"],
+    rmf:"Authorize (decision authority)"
+  },
+  {
+    code:"ISSM", title:"Information System Security Manager", category:"Legacy IAM Level II–III",
+    desc:"Owns the security program across a portfolio of systems — sits above the ISSO in the supervision chain.",
+    duties:["Sets organizational security policy and resourcing","Supervises ISSOs across multiple systems","Reviews and endorses authorization packages before they reach the AO","Owns the risk management strategy at the organizational level"],
+    certs:["CISSP — near-universal expectation at this level","CISM","CGRC — useful added credibility for RMF-specific work"],
+    rmf:"Program-wide oversight, all steps"
+  },
+  {
+    code:"ISSO", title:"Information System Security Officer", category:"Legacy IAM Level I",
+    desc:"Owns day-to-day security for one specific system — the role most directly tied to the RMF Tracker in this module.",
+    duties:["Maintains the SSP as the system changes","Tracks and updates the POA&M","Coordinates with the SCA during assessments","Reports status up to the ISSM"],
+    certs:["Security+ — most common entry-level baseline","CGRC — directly aligned with ISSO/authorization work","CySA+ for more technical ISSO roles","CISSP for senior ISSO positions"],
+    rmf:"Day-to-day, especially Implement & Monitor"
+  },
+  {
+    code:"ISSE", title:"Information System Security Engineer", category:"Legacy IASAE Level I–III",
+    desc:"Engineers security into the system's architecture during design and development — not documented after the fact, built in from the start.",
+    duties:["Translates security requirements into system/architecture design","Works within the SDLC alongside system engineers","Recommends and integrates technical controls","Supports secure-by-design decisions ahead of Implement"],
+    certs:["CASP+ / SecurityX — common IASAE baseline","CISSP-ISSEP — CISSP plus the systems-engineering concentration","CISSP"],
+    rmf:"Select & Implement (designs controls in)"
+  },
+  {
+    code:"SCA", title:"Security Control Assessor", category:"Independent assessor role",
+    desc:"Independently tests whether implemented controls actually work. Independence from the system team is the entire point — an SCA shouldn't assess their own work.",
+    duties:["Develops the Security Assessment Plan (SAP)","Executes NIST SP 800-53A assessment procedures","Documents findings in the Security Assessment Report (SAR)","Flags deficiencies that feed the POA&M"],
+    certs:["CISSP — common expectation","CGRC — directly relevant to authorization-focused assessment","Technical testing certs (e.g. CySA+) for hands-on assessors"],
+    rmf:"Assess"
+  },
+  {
+    code:"SA", title:"System Administrator", category:"Legacy IAT Level I–III",
+    desc:"Operates and maintains the actual system — the one implementing the technical controls the ISSO/ISSE call for.",
+    duties:["Account and access management","Patching and configuration management","Backup and system maintenance","Executes technical controls under ISSO/ISSE direction"],
+    certs:["Security+ — IAT Level I/II baseline","CySA+ or CASP+/SecurityX — IAT Level III baseline","Required level scales with network privilege, not job title"],
+    rmf:"Implement & Monitor (executes technical controls)"
+  }
+];
+
+function renderRoles(){
+  document.getElementById('rolesList').innerHTML = ROLES.map(r=>`
+    <div class="role-card">
+      <div class="role-head">
+        <span class="role-code">${r.code}</span>
+        <span class="role-title">${r.title}</span>
+      </div>
+      <div class="role-category">${r.category}</div>
+      <p class="role-desc">${r.desc}</p>
+      <div class="role-cols">
+        <div class="role-col">
+          <div class="role-col-label">What they do</div>
+          <ul>${r.duties.map(d=>`<li>${d}</li>`).join('')}</ul>
+        </div>
+        <div class="role-col">
+          <div class="role-col-label">Typical certs</div>
+          <ul>${r.certs.map(c=>`<li>${c}</li>`).join('')}</ul>
+        </div>
+      </div>
+      <span class="role-rmf-tag">RMF: ${r.rmf}</span>
+    </div>
+  `).join('');
+}
+
 /* ---------- TABS ---------- */
-const TAB_IDS = ['tracker','study','certs','nist'];
+const TAB_IDS = ['tracker','study','certs','nist','roles'];
 TAB_IDS.forEach(id=>{
   document.getElementById('tab-'+id).onclick = ()=>{
     TAB_IDS.forEach(other=>{
@@ -778,6 +874,7 @@ TAB_IDS.forEach(id=>{
   renderCertLandscape();
   renderCertChecklist();
   renderNistLibrary();
+  renderRoles();
 })();
 </script>
 </body>
