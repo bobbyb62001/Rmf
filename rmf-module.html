@@ -126,6 +126,14 @@
   .link-row a:hover{text-decoration:underline;}
   .link-row .note{color:var(--ink-soft);font-size:0.8rem;}
   .src-group-label{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber-dim);margin-top:4px;}
+  .cert-row{padding:11px 0;border-top:1px solid var(--paper-dim);}
+  .cert-row:first-of-type{border-top:none;}
+  .cert-row-head{display:flex;align-items:center;gap:9px;margin-bottom:3px;}
+  .cert-row-head b{font-size:0.92rem;}
+  .tier-badge{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;}
+  .tier-badge.tier-standard{background:rgba(91,117,83,0.18);color:var(--olive);}
+  .tier-badge.tier-niche{background:rgba(200,155,60,0.18);color:var(--amber-dim);}
+  .cert-row p{margin:0;font-size:0.84rem;color:var(--ink-soft);line-height:1.4;}
   .func-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--paper-dim);align-items:flex-start;}
   .func-row:first-of-type{border-top:none;}
   .func-badge{flex-shrink:0;width:88px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:var(--navy-panel);color:var(--amber);padding:5px 4px;border-radius:5px;}
@@ -137,7 +145,7 @@
 <div class="wrap">
   <header>
     <div>
-      <span class="eyebrow">SHIELD · RMF Module</span>
+      <span class="eyebrow">ISSO Reference · RMF Module</span>
       <h1>Risk Management Framework</h1>
     </div>
     <div class="tabbar">
@@ -176,6 +184,13 @@
         <p class="desc">CAP was renamed CGRC on Feb 15, 2023 — same exam lineage, same seven domains, new name. The domains map almost one-to-one onto the RMF steps in the Tracker tab, so working through that checklist doubles as exam prep.</p>
         <div class="exam-facts" id="examFacts"></div>
         <table class="domain-table" id="domainTable"></table>
+      </div>
+
+      <div class="detail-card" style="margin-bottom:20px;">
+        <span class="step-eyebrow">Know before you chase one</span>
+        <h2>The cert landscape</h2>
+        <p class="desc">Not all "RMF certifications" carry the same weight. Worth knowing the difference before spending time or money.</p>
+        <div id="certLandscapeList"></div>
       </div>
 
       <div class="detail-card">
@@ -350,7 +365,7 @@ const QUIZ = [
   {cat:"Controls", q:"Which publication provides assessment procedures for verifying controls during the Assess step?", choices:["NIST SP 800-37","NIST SP 800-53A","NIST SP 800-30","FIPS 199"], answer:1, explain:"800-53A pairs with 800-53 — it tells assessors how to test whether each control is actually working."},
   {cat:"Tools", q:"What is eMASS primarily used for in DoD RMF workflows?", choices:["Writing firewall rules","Managing and tracking a system's RMF package, controls, and POA&Ms centrally","Running vulnerability scans directly","Replacing the SSP entirely"], answer:1, explain:"eMASS (Enterprise Mission Assurance Support Service) is the system of record for managing RMF packages across DoD."},
   {cat:"General", q:"Roughly how often must a system's authorization be reassessed under continuous monitoring approaches?", choices:["Once, permanently","On the cadence defined by the org's continuous monitoring strategy, not a fixed one-time event","Every 10 years exactly","Only when a breach occurs"], answer:1, explain:"Ongoing authorization relies on the continuous monitoring strategy set in the Select step, not a single point-in-time review."},
-  {cat:"General", q:"What is the relationship between CMMC and RMF for a DoD contractor?", choices:["They are identical processes","CMMC verifies contractor cybersecurity maturity/compliance with NIST 800-171; RMF is the DoD system authorization process — they can overlap in a SHIELD-type environment but serve different purposes","CMMC replaces RMF entirely","RMF only applies to commercial companies"], answer:1, explain:"CMMC assesses a contractor's cybersecurity practices (largely against NIST 800-171); RMF is the framework for authorizing DoD information systems."},
+  {cat:"General", q:"What is the relationship between CMMC and RMF for a DoD contractor?", choices:["They are identical processes","CMMC verifies contractor cybersecurity maturity/compliance with NIST 800-171; RMF is the DoD system authorization process — they can overlap in a contractor environment but serve different purposes","CMMC replaces RMF entirely","RMF only applies to commercial companies"], answer:1, explain:"CMMC assesses a contractor's cybersecurity practices (largely against NIST 800-171); RMF is the framework for authorizing DoD information systems."},
 
   {cat:"800-53", q:"How many control families does NIST SP 800-53 Rev 5 organize its catalog into?", choices:["12","18","20","25"], answer:2, explain:"Rev 5 added two new families (PT and SR), bringing the total from 18 in Rev 4 up to 20."},
   {cat:"800-53", q:"Which two control families were newly added in Rev 5?", choices:["AC and AU","PT and SR","CM and CP","SA and SC"], answer:1, explain:"PT (PII Processing and Transparency) and SR (Supply Chain Risk Management) were both new additions in Rev 5."},
@@ -720,6 +735,25 @@ function renderNistLibrary(){
   ).join('');
 }
 
+const CERT_LANDSCAPE = [
+  {tier:"standard", name:"CGRC (ISC2)", note:"Referenced directly in DoD 8140.03 as a qualifying certification for RMF-related workforce roles. This is the one that actually matters for hiring and DoD workforce compliance."},
+  {tier:"niche", name:"RMF Foundation / RMF Lead Implementer (ITCERTS)", note:"Real proctored exams (40 questions, 60 min, 70% to pass), but from a small private certifying body — not DoD 8140-recognized or widely requested in job postings."},
+  {tier:"niche", name:"Vendor boot-camp certs (e.g. 'RMF 2.0 for DoD/IC')", note:"Some training companies sell their own exam alongside the course. Fine as structured training, but it's the vendor's own credential, not an industry-standard one."},
+  {tier:"niche", name:"Certified NIST AI RMF 1.0 Architect (CIS)", note:"A real, accredited credential — but for the AI RMF (Govern/Map/Measure/Manage), a separate framework from system-authorization RMF. Relevant only if AI systems enter scope."}
+];
+
+function renderCertLandscape(){
+  document.getElementById('certLandscapeList').innerHTML = CERT_LANDSCAPE.map(c=>`
+    <div class="cert-row">
+      <div class="cert-row-head">
+        <b>${c.name}</b>
+        <span class="tier-badge tier-${c.tier}">${c.tier==='standard'?'Industry standard':'Niche / vendor'}</span>
+      </div>
+      <p>${c.note}</p>
+    </div>
+  `).join('');
+}
+
 /* ---------- TABS ---------- */
 const TAB_IDS = ['tracker','study','certs','nist'];
 TAB_IDS.forEach(id=>{
@@ -741,6 +775,7 @@ TAB_IDS.forEach(id=>{
   buildFilters();
   startQuizSet();
   renderCertStatics();
+  renderCertLandscape();
   renderCertChecklist();
   renderNistLibrary();
 })();
